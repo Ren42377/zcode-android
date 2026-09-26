@@ -13,6 +13,7 @@ import com.zcode.android.core.agent.HookRunner
 import com.zcode.android.core.agent.MemoryStore
 import com.zcode.android.core.agent.PermissionMode
 import com.zcode.android.core.agent.SkillLoader
+import com.zcode.android.core.mcp.McpRegistry
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.LlmClient
 import com.zcode.android.core.engine.LlmEndpoint
@@ -111,6 +112,7 @@ class ChatViewModel
         private val memoryStore: MemoryStore,
         private val skillLoader: SkillLoader,
         private val hookRunner: HookRunner,
+        private val mcpRegistry: McpRegistry,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
 
@@ -402,6 +404,8 @@ class ChatViewModel
                         return@launch
                     }
                     val hookConfig = hookRunner.loadConfig(workspace())
+                    mcpRegistry.loadConfig(workspace())
+                    mcpRegistry.connectAll()
                     val toolContext = buildToolContext(endpoint)
                     if (!sessionStarted) {
                         sessionStarted = true
