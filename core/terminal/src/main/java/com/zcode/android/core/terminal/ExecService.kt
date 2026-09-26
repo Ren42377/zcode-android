@@ -7,6 +7,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 // Result of a one-shot command execution. exitCode follows shell conventions
 // (128 + signal when the watchdog had to kill the command).

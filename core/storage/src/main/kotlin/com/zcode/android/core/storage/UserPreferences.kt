@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,6 +29,12 @@ class UserPreferences(
     val thinkingEffort: Flow<String?> =
         context.dataStore.data.map { it[KEY_THINKING_EFFORT] }
 
+    val permissionMode: Flow<String> =
+        context.dataStore.data.map { it[KEY_PERMISSION_MODE] ?: MODE_BUILD }
+
+    val alwaysAllowedTools: Flow<Set<String>> =
+        context.dataStore.data.map { it[KEY_ALWAYS_ALLOWED_TOOLS] ?: emptySet() }
+
     suspend fun setOnboarded(value: Boolean) {
         context.dataStore.edit { it[KEY_ONBOARDED] = value }
     }
@@ -50,12 +57,32 @@ class UserPreferences(
         }
     }
 
+    suspend fun setPermissionMode(value: String) {
+        context.dataStore.edit { it[KEY_PERMISSION_MODE] = value }
+    }
+
+    suspend fun addAlwaysAllowedTool(name: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ALWAYS_ALLOWED_TOOLS] = (prefs[KEY_ALWAYS_ALLOWED_TOOLS] ?: emptySet()) + name
+        }
+    }
+
+    suspend fun removeAlwaysAllowedTool(name: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ALWAYS_ALLOWED_TOOLS] = (prefs[KEY_ALWAYS_ALLOWED_TOOLS] ?: emptySet()) - name
+        }
+    }
+
     private companion object {
         fun key(name: String): Preferences.Key<String> = stringPreferencesKey(name)
+
+        const val MODE_BUILD = "build"
 
         val KEY_ONBOARDED = booleanPreferencesKey("onboarded")
         val KEY_PROVIDER_ID = key("provider_id")
         val KEY_MODEL = key("model")
         val KEY_THINKING_EFFORT = key("thinking_effort")
+        val KEY_PERMISSION_MODE = key("permission_mode")
+        val KEY_ALWAYS_ALLOWED_TOOLS = stringSetPreferencesKey("always_allowed_tools")
     }
 }

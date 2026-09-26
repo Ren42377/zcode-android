@@ -10,8 +10,11 @@ android {
 
 dependencies {
     implementation(project(":core:engine"))
+    implementation(project(":core:tools"))
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.okhttp)
 
     ksp(libs.hilt.compiler)
 }
