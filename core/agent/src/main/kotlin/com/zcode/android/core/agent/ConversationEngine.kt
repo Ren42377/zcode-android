@@ -8,8 +8,8 @@ import com.zcode.android.core.engine.LlmRequest
 import com.zcode.android.core.engine.LlmRole
 import com.zcode.android.core.engine.LlmUsage
 import com.zcode.android.core.engine.ThinkingEffort
-import javax.inject.Inject
 import okhttp3.Call
+import javax.inject.Inject
 
 data class TurnResult(
     val content: String,

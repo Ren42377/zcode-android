@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.zcode.android.core.storage.SessionDao
 import com.zcode.android.core.storage.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
 data class StartupState(
     val onboarded: Boolean,

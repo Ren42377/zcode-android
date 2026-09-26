@@ -17,9 +17,6 @@ import com.zcode.android.core.storage.MessageEntity
 import com.zcode.android.core.storage.SessionDao
 import com.zcode.android.core.storage.SessionEntity
 import com.zcode.android.core.storage.UserPreferences
-import java.io.IOException
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +28,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import okhttp3.Call
+import java.io.IOException
+import java.util.UUID
+import javax.inject.Inject
 
 data class StreamingState(
     val thinking: String,
@@ -174,7 +174,12 @@ class ChatViewModel
             sessionDao.upsert(
                 SessionEntity(
                     id = id,
-                    title = seed.lineSequence().firstOrNull().orEmpty().take(TITLE_CHARS),
+                    title =
+                        seed
+                            .lineSequence()
+                            .firstOrNull()
+                            .orEmpty()
+                            .take(TITLE_CHARS),
                     workspacePath = "",
                     providerId = preferences.providerId.first().orEmpty(),
                     model = currentModel(),
