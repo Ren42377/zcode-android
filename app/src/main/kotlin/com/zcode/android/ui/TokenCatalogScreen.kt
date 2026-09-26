@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,7 +54,7 @@ private val tokens =
     )
 
 @Composable
-fun TokenCatalogScreen() {
+fun TokenCatalogScreen(onOpenTerminal: () -> Unit) {
     Column(
         modifier =
             Modifier
@@ -73,6 +74,12 @@ fun TokenCatalogScreen() {
             style = MaterialTheme.typography.bodyMedium,
             color = ZcodeColors.muted,
         )
+        Button(
+            onClick = onOpenTerminal,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = "Open terminal")
+        }
         tokens.forEach { token ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
