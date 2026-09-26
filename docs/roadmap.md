@@ -55,10 +55,10 @@ This page tracks the feature parity matrix with ZCode and the release milestones
 
 | ID | Content | Status |
 | --- | --- | --- |
-| M0 | Foundation: repository with documentation, Gradle scaffold with all modules, design tokens, green CI, release workflow | In progress |
-| M1 | Terminal: PTY via JNI, shell sessions, Terminal screen on the stock shell, streaming output, resize, NDK build on CI | Not started |
-| M2 | Chat core: LLM client with streaming, session storage, chat screen with the ZCode theme, API key onboarding, model picker | Not started |
-| M3 | Tools and permissions: full v1 tool set, permission modes with approval UI, todo widget, compaction, message queue | Not started |
+| M0 | Foundation: repository with documentation, Gradle scaffold with all modules, design tokens, green CI, release workflow | Done |
+| M1 | Terminal: PTY via JNI, shell sessions, Terminal screen on the stock shell, streaming output, resize, NDK build on CI | Done |
+| M2 | Chat core: LLM client with streaming, session storage, chat screen with the ZCode theme, API key onboarding, model picker | Done |
+| M3 | Tools and permissions: full v1 tool set, permission modes with approval UI, todo widget, compaction, message queue | In progress (tools, agent loop, approvals, queue, and todo widget are implemented; compaction and remaining polish pending) |
 | M4 | Extensibility: slash and custom commands, skills, plugins and marketplace, hooks, MCP, subagents, memory | Not started |
 | M5 | Integration and polish: full Termux bridge, file explorer, usage view, in-app updates, simple /goal, cross-device QA, signed v1.0.0 release | Not started |
 
