@@ -1,6 +1,5 @@
 package com.zcode.android.core.tools
 
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -15,6 +14,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 
 private const val FETCH_BODY_LIMIT_BYTES = 512 * 1024
 private const val FETCH_OUTPUT_LIMIT_CHARS = 8_000
@@ -63,8 +63,7 @@ class WebFetchTool : Tool {
                                 val buffer = ByteArray(FETCH_BODY_LIMIT_BYTES)
                                 val read = stream.read(buffer)
                                 String(buffer, 0, if (read > 0) read else 0, Charsets.UTF_8)
-                            }
-                            .orEmpty()
+                            }.orEmpty()
                     val contentType = response.header("Content-Type").orEmpty()
                     val text =
                         if (contentType.contains("html")) {
@@ -173,19 +172,22 @@ class WebSearchTool : Tool {
     // The provider response shape varies between deployments; collect title, link,
     // and content fields from the first known array of results.
     private fun formatResults(payload: String): String {
-        val root = runCatching { Json.parseToJsonElement(payload).jsonObject }.getOrNull()
-            ?: return "Search returned an unreadable response"
+        val root =
+            runCatching { Json.parseToJsonElement(payload).jsonObject }.getOrNull()
+                ?: return "Search returned an unreadable response"
         val results =
             (root["search_result"] ?: root["data"]) as? JsonArray
                 ?: return "Search returned no results"
         val lines =
-            results.take(8).mapIndexed { index, element ->
-                val item = element as? JsonObject ?: return@mapIndexed null
-                val title = (item["title"] as? JsonPrimitive)?.contentOrNull ?: ""
-                val link = (item["link"] ?: item["url"])?.let { (it as? JsonPrimitive)?.contentOrNull } ?: ""
-                val snippet = (item["content"] as? JsonPrimitive)?.contentOrNull ?: ""
-                "${index + 1}. $title\n$link\n${snippet.take(300)}"
-            }.filterNotNull()
+            results
+                .take(8)
+                .mapIndexed { index, element ->
+                    val item = element as? JsonObject ?: return@mapIndexed null
+                    val title = (item["title"] as? JsonPrimitive)?.contentOrNull ?: ""
+                    val link = (item["link"] ?: item["url"])?.let { (it as? JsonPrimitive)?.contentOrNull } ?: ""
+                    val snippet = (item["content"] as? JsonPrimitive)?.contentOrNull ?: ""
+                    "${index + 1}. $title\n$link\n${snippet.take(300)}"
+                }.filterNotNull()
         if (lines.isEmpty()) {
             return "Search returned no results"
         }

@@ -1,10 +1,10 @@
 package com.zcode.android.core.tools
 
-import java.io.File
-import java.util.regex.PatternSyntaxException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.File
+import java.util.regex.PatternSyntaxException
 
 private const val GREP_MATCH_LIMIT = 100
 private const val GREP_FILE_LIMIT = 2_000
@@ -57,7 +57,10 @@ class GrepTool : Tool {
         val rawScope = input.stringField("path")
         val scope: File =
             when {
-                rawScope.isNullOrEmpty() -> context.workspaceRoot
+                rawScope.isNullOrEmpty() -> {
+                    context.workspaceRoot
+                }
+
                 else -> {
                     val resolved = resolveWorkspacePath(context.workspaceRoot, rawScope)
                     if (resolved == null || !resolved.exists()) {
@@ -110,11 +113,12 @@ class GrepTool : Tool {
     }
 
     private fun isBinary(file: File): Boolean {
-        val bytes = file.inputStream().use { stream ->
-            val buffer = ByteArray(BINARY_SAMPLE_BYTES)
-            val read = stream.read(buffer)
-            buffer.copyOf(if (read > 0) read else 0)
-        }
+        val bytes =
+            file.inputStream().use { stream ->
+                val buffer = ByteArray(BINARY_SAMPLE_BYTES)
+                val read = stream.read(buffer)
+                buffer.copyOf(if (read > 0) read else 0)
+            }
         return bytes.contains(0.toByte())
     }
 }

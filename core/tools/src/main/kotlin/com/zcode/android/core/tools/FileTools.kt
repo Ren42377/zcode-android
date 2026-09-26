@@ -1,9 +1,9 @@
 package com.zcode.android.core.tools
 
-import java.io.File
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.File
 
 private const val READ_LINE_LIMIT = 2_000
 
@@ -66,7 +66,8 @@ class ReadTool : Tool {
             return ToolOutcome(outputForModel = "Line $offset is beyond the end of the file (${lines.size} lines)")
         }
         val body =
-            lines.subList(offset - 1, end)
+            lines
+                .subList(offset - 1, end)
                 .mapIndexed { index, line -> "%6d\t%s".format(offset + index, line) }
                 .joinToString(separator = "\n")
         val suffix =

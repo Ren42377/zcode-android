@@ -1,8 +1,6 @@
 package com.zcode.android.core.tools
 
 import com.zcode.android.core.terminal.ExecService
-import java.io.File
-import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -15,6 +13,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 
 // Shared fixture for tool tests: a temporary workspace with plain file helpers.
 abstract class ToolTestBase {

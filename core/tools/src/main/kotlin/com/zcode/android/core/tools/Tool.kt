@@ -1,7 +1,6 @@
 package com.zcode.android.core.tools
 
 import com.zcode.android.core.terminal.ExecService
-import java.io.File
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -9,6 +8,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
+import java.io.File
 
 // Outcome of a tool execution. outputForModel is what the model sees as the tool
 // result; isError marks failures so the model can react instead of crashing.
@@ -59,9 +59,7 @@ internal fun JsonObject.intField(key: String): Int? = (this[key] as? JsonPrimiti
 
 internal fun toolError(message: String): ToolOutcome = ToolOutcome(outputForModel = message, isError = true)
 
-internal fun requiredFields(
-    vararg names: String,
-): JsonArray =
+internal fun requiredFields(vararg names: String): JsonArray =
     buildJsonArray {
         names.forEach { add(JsonPrimitive(it)) }
     }

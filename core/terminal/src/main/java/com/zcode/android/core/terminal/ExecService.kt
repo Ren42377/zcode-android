@@ -71,16 +71,17 @@ class ExecService {
             val exitCode = session.awaitExit()
             // The child is gone; close the PTY and stop the write loop.
             session.close()
-            val suffix = buildString {
-                if (timedOut) {
-                    append("[command timed out after ${timeoutMs}ms]")
-                    append('\n')
+            val suffix =
+                buildString {
+                    if (timedOut) {
+                        append("[command timed out after ${timeoutMs}ms]")
+                        append('\n')
+                    }
+                    if (truncated) {
+                        append("[output truncated]")
+                        append('\n')
+                    }
                 }
-                if (truncated) {
-                    append("[output truncated]")
-                    append('\n')
-                }
-            }
             ExecResult(
                 exitCode = exitCode,
                 output = collected.toString() + suffix,

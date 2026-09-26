@@ -1,10 +1,10 @@
 package com.zcode.android.core.tools
 
-import java.io.File
-import java.util.regex.PatternSyntaxException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.File
+import java.util.regex.PatternSyntaxException
 
 // Translates a glob pattern (with **, * and ?) into a path regex.
 internal fun globToRegex(pattern: String): Regex {
