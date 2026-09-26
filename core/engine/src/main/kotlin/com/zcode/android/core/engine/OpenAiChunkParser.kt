@@ -6,6 +6,23 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
+// Protocol neutral result of parsing one SSE payload: display events, usage when
+// present, and tool call fragments the client merges across chunks.
+data class ParsedChunk(
+    val events: List<LlmEvent>,
+    val usage: LlmUsage?,
+    val toolCallFragments: List<ToolCallFragment>,
+)
+
+// One incremental piece of a tool call. Providers stream the call id and name
+// first, then the arguments as JSON text fragments.
+data class ToolCallFragment(
+    val index: Int,
+    val id: String?,
+    val name: String?,
+    val argumentsFragment: String?,
+)
+
 // Parses OpenAI chat completion chunks. GLM models expose their thinking as
 // reasoning_content on the delta, and the final chunk (with
 // stream_options.include_usage) carries the usage totals.

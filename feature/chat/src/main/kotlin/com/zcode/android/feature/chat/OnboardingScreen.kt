@@ -67,7 +67,9 @@ fun OnboardingScreen(
             color = ZcodeColors.text,
         )
         Text(
-            text = "An AI coding agent for Android. Paste the API key for your Z.ai or BigModel account to start. The key is validated once and stored in the Android Keystore.",
+            text =
+                "An AI coding agent for Android. Paste the API key for your Z.ai or BigModel account " +
+                    "to start. The key is validated once and stored in the Android Keystore.",
             style = MaterialTheme.typography.bodyMedium,
             color = ZcodeColors.muted,
         )

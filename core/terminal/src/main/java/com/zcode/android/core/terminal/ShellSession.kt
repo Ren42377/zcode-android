@@ -106,6 +106,23 @@ class ShellSession internal constructor(
             return ShellSession(pid = result[0], masterFd = result[1])
         }
 
+        // Starts a one-shot shell command; the caller reads the combined output.
+        fun startNonInteractive(
+            command: String,
+            workingDirectory: String,
+            environment: Array<String>,
+        ): ShellSession {
+            val result =
+                PtyChannel.forkExec(
+                    cmd = arrayOf("/system/bin/sh", "-c", command),
+                    cwd = workingDirectory,
+                    env = environment,
+                    rows = 24,
+                    cols = 80,
+                )
+            return ShellSession(pid = result[0], masterFd = result[1])
+        }
+
         internal fun buildEnvironment(
             homeDirectory: String,
             tmpDirectory: String,
