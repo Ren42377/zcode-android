@@ -21,3 +21,6 @@ keystore.properties
 .kotlin/
 *.log
 .DS_Store
+
+# Local lint tool binary, downloaded only in CI
+ktlint
