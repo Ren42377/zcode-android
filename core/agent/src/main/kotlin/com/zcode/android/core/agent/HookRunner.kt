@@ -3,13 +3,13 @@ package com.zcode.android.core.agent
 import android.content.Context
 import com.zcode.android.core.terminal.ExecService
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import javax.inject.Inject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import java.io.File
+import javax.inject.Inject
 
 // One configured hook: a shell command triggered by an event, optionally filtered
 // by a matcher over the event subject (usually the tool name).
@@ -158,8 +158,12 @@ class HookRunner
                     ?: return HookConfig()
             val section = (root["hooks"] as? JsonObject) ?: return HookConfig()
             val enabled = (section["enabled"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: true
-            val timeoutMs = (section["timeoutMs"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull() ?: HookConfig.DEFAULT_TIMEOUT_MS
-            val maxOutputBytes = (section["maxOutputBytes"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() ?: HookConfig.DEFAULT_MAX_OUTPUT_BYTES
+            val timeoutMs =
+                (section["timeoutMs"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull()
+                    ?: HookConfig.DEFAULT_TIMEOUT_MS
+            val maxOutputBytes =
+                (section["maxOutputBytes"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
+                    ?: HookConfig.DEFAULT_MAX_OUTPUT_BYTES
             val events = section["events"] as? JsonObject ?: JsonObject(emptyMap())
             val definitions =
                 events.entries.flatMap { (event, value) ->
@@ -170,8 +174,9 @@ class HookRunner
                             val hooks = entryObject["hooks"] as? kotlinx.serialization.json.JsonArray ?: return@flatMap emptyList()
                             hooks.mapNotNull { hook ->
                                 val hookObject = hook as? JsonObject ?: return@mapNotNull null
-                                val command = (hookObject["command"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
-                                    ?: return@mapNotNull null
+                                val command =
+                                    (hookObject["command"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
+                                        ?: return@mapNotNull null
                                 HookDefinition(event = event, matcher = matcher, command = command)
                             }
                         }.orEmpty()
@@ -196,6 +201,7 @@ class HookRunner
             const val EXIT_OK = 0
             const val EXIT_BLOCK = 2
             const val REASON_CHARS = 300
+
             // The hook reads its payload from stdin via a heredoc, which keeps the
             // one-shot PTY execution non interactive.
             const val PIPE_PREFIX = "cat <<'ZCODE_HOOK_EOF'\n"

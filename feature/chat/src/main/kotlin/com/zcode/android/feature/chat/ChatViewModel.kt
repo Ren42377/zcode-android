@@ -14,10 +14,10 @@ import com.zcode.android.core.agent.MemoryStore
 import com.zcode.android.core.agent.PermissionMode
 import com.zcode.android.core.agent.SkillLoader
 import com.zcode.android.core.engine.BuiltinModels
-import com.zcode.android.core.engine.LlmEndpoint
-import com.zcode.android.core.engine.LlmMessage
 import com.zcode.android.core.engine.LlmClient
+import com.zcode.android.core.engine.LlmEndpoint
 import com.zcode.android.core.engine.LlmEvent
+import com.zcode.android.core.engine.LlmMessage
 import com.zcode.android.core.engine.LlmProtocol
 import com.zcode.android.core.engine.LlmRequest
 import com.zcode.android.core.engine.LlmRole
@@ -229,12 +229,30 @@ class ChatViewModel
             val name = body.substringBefore(' ')
             val args = body.substringAfter(' ', missingDelimiterValue = "").trim()
             when (name) {
-                "help" -> insertLocalMessage(helpText())
-                "model" -> _pickerOpen.value = true
-                "mode" -> cycleMode()
-                "effort" -> cycleEffort()
-                "clear" -> sessionKey.value = NEW_SESSION
-                "compact" -> compact()
+                "help" -> {
+                    insertLocalMessage(helpText())
+                }
+
+                "model" -> {
+                    _pickerOpen.value = true
+                }
+
+                "mode" -> {
+                    cycleMode()
+                }
+
+                "effort" -> {
+                    cycleEffort()
+                }
+
+                "clear" -> {
+                    sessionKey.value = NEW_SESSION
+                }
+
+                "compact" -> {
+                    compact()
+                }
+
                 "goal" -> {
                     if (args.isNotEmpty()) {
                         viewModelScope.launch {
@@ -244,8 +262,13 @@ class ChatViewModel
                     }
                 }
 
-                "init" -> initAgentsMd()
-                "memory" -> showMemory()
+                "init" -> {
+                    initAgentsMd()
+                }
+
+                "memory" -> {
+                    showMemory()
+                }
             }
         }
 
@@ -281,9 +304,10 @@ class ChatViewModel
                     _busy.value = true
                     try {
                         val transcript =
-                            history.joinToString(separator = "\n\n") { message ->
-                                "${message.role}: ${message.content}".take(2_000)
-                            }.take(MAX_COMPACT_CHARS)
+                            history
+                                .joinToString(separator = "\n\n") { message ->
+                                    "${message.role}: ${message.content}".take(2_000)
+                                }.take(MAX_COMPACT_CHARS)
                         val text = StringBuilder()
                         client.stream(
                             request =
@@ -333,12 +357,18 @@ class ChatViewModel
         }
 
         private suspend fun insertLocalMessage(content: String) {
-            ensureSession(content.lineSequence().firstOrNull().orEmpty().ifEmpty { "Note" }.take(TITLE_CHARS))
+            ensureSession(
+                content
+                    .lineSequence()
+                    .firstOrNull()
+                    .orEmpty()
+                    .ifEmpty { "Note" }
+                    .take(TITLE_CHARS),
+            )
             insertRoleMessage(ROLE_ASSISTANT, content)
         }
 
-        private fun helpText(): String =
-            SlashCommands.all.joinToString(separator = "\n") { "/${it.name} - ${it.description}" }
+        private fun helpText(): String = SlashCommands.all.joinToString(separator = "\n") { "/${it.name} - ${it.description}" }
 
         fun selectModel(modelId: String) {
             viewModelScope.launch {

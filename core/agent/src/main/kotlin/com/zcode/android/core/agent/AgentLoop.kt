@@ -15,10 +15,10 @@ import com.zcode.android.core.tools.ToolOutcome
 import com.zcode.android.core.tools.ToolRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.put
 import okhttp3.Call
 import javax.inject.Inject
 
@@ -94,7 +94,15 @@ class AgentLoop
                 lastText = text.toString()
                 if (outcome.toolCalls.isEmpty()) {
                     if (hooks != null && stopBlocks < MAX_STOP_BLOCKS) {
-                        val stop = hookRunner.run("Stop", "session", JsonObject(emptyMap()), hooks, context.shellEnvironment, context.workspaceRoot.path)
+                        val stop =
+                            hookRunner.run(
+                                "Stop",
+                                "session",
+                                JsonObject(emptyMap()),
+                                hooks,
+                                context.shellEnvironment,
+                                context.workspaceRoot.path,
+                            )
                         if (stop.blocked) {
                             stopBlocks++
                             messages +=
@@ -160,7 +168,13 @@ class AgentLoop
                                 workingDirectory = context.workspaceRoot.path,
                             )
                         if (permission.blocked) {
-                            finishTool(call, onEvent, messages, "Denied by PermissionRequest hook: " + (permission.reason ?: "no reason given"), isError = true)
+                            finishTool(
+                                call,
+                                onEvent,
+                                messages,
+                                "Denied by PermissionRequest hook: " + (permission.reason ?: "no reason given"),
+                                isError = true,
+                            )
                             return
                         }
                     }
