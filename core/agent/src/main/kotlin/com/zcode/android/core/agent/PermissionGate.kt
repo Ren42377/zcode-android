@@ -1,8 +1,8 @@
 package com.zcode.android.core.agent
 
 import com.zcode.android.core.storage.UserPreferences
-import javax.inject.Inject
 import kotlinx.coroutines.flow.first
+import javax.inject.Inject
 
 sealed interface PermissionDecision {
     data object Allow : PermissionDecision

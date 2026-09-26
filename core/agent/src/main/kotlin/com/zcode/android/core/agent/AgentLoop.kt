@@ -13,12 +13,12 @@ import com.zcode.android.core.tools.TodoWriteTool
 import com.zcode.android.core.tools.ToolContext
 import com.zcode.android.core.tools.ToolOutcome
 import com.zcode.android.core.tools.ToolRegistry
-import javax.inject.Inject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.Call
+import javax.inject.Inject
 
 // Runs the agent turn loop: stream a completion, execute requested tools under
 // the permission rules, and repeat until the model answers without tool calls.
@@ -124,7 +124,10 @@ class AgentLoop
                     onEvent(AgentEvent.ApprovalRequested(callId = call.id, name = call.name, summary = summary))
                     val answer = approvals.register(call.id).await()
                     when (answer) {
-                        ApprovalAnswer.ALLOW_ALWAYS -> gate.allowAlways(call.name)
+                        ApprovalAnswer.ALLOW_ALWAYS -> {
+                            gate.allowAlways(call.name)
+                        }
+
                         ApprovalAnswer.REJECT_ONCE -> {
                             finishTool(call, onEvent, messages, "The user rejected this action.", isError = true)
                             return
@@ -214,13 +217,20 @@ class AgentLoop
             next: LlmUsage?,
         ): LlmUsage? =
             when {
-                current == null -> next
-                next == null -> current
-                else ->
+                current == null -> {
+                    next
+                }
+
+                next == null -> {
+                    current
+                }
+
+                else -> {
                     LlmUsage(
                         inputTokens = current.inputTokens + next.inputTokens,
                         outputTokens = current.outputTokens + next.outputTokens,
                     )
+                }
             }
 
         private companion object {

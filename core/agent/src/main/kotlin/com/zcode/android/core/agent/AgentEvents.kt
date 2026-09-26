@@ -1,9 +1,9 @@
 package com.zcode.android.core.agent
 
 import com.zcode.android.core.tools.TodoItem
+import kotlinx.coroutines.CompletableDeferred
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CompletableDeferred
 
 // Events the agent loop emits while a turn runs; the chat UI renders them live.
 sealed interface AgentEvent {
