@@ -20,6 +20,12 @@ import kotlinx.serialization.json.contentOrNull
 import okhttp3.Call
 import javax.inject.Inject
 
+data class TurnResult(
+    val content: String,
+    val thinking: String?,
+    val usage: LlmUsage?,
+)
+
 // Runs the agent turn loop: stream a completion, execute requested tools under
 // the permission rules, and repeat until the model answers without tool calls.
 class AgentLoop
