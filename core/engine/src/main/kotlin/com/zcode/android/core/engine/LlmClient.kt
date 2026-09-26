@@ -40,7 +40,8 @@ class LlmClient(
         withContext(Dispatchers.IO) {
             val httpCall =
                 client.newCall(
-                    Request.Builder()
+                    Request
+                        .Builder()
                         .url(endpointUrl(endpoint))
                         .headers(endpoint.headers(apiKey))
                         .post(endpoint.requestBody(request).toRequestBody(JSON_MEDIA_TYPE))
@@ -49,7 +50,11 @@ class LlmClient(
             onCallStarted(httpCall)
             httpCall.execute().use { response ->
                 if (!response.isSuccessful) {
-                    val errorBody = response.body?.string().orEmpty().take(ERROR_SNIPPET_CHARS)
+                    val errorBody =
+                        response.body
+                            ?.string()
+                            .orEmpty()
+                            .take(ERROR_SNIPPET_CHARS)
                     throw IOException("HTTP ${response.code}: $errorBody")
                 }
                 val source = response.body.source()
@@ -80,15 +85,20 @@ class LlmClient(
             }
 
     private fun LlmEndpoint.headers(apiKey: String) =
-        okhttp3.Headers.Builder().apply {
-            when (protocol) {
-                LlmProtocol.OPENAI -> add("Authorization", "Bearer $apiKey")
-                LlmProtocol.ANTHROPIC -> {
-                    add("x-api-key", apiKey)
-                    add("anthropic-version", ANTHROPIC_VERSION)
+        okhttp3.Headers
+            .Builder()
+            .apply {
+                when (protocol) {
+                    LlmProtocol.OPENAI -> {
+                        add("Authorization", "Bearer $apiKey")
+                    }
+
+                    LlmProtocol.ANTHROPIC -> {
+                        add("x-api-key", apiKey)
+                        add("anthropic-version", ANTHROPIC_VERSION)
+                    }
                 }
-            }
-        }.build()
+            }.build()
 
     private fun LlmEndpoint.requestBody(request: LlmRequest): String {
         val body =
@@ -177,14 +187,24 @@ class LlmClient(
         protocol: LlmProtocol,
     ): LlmUsage? =
         when {
-            chunk == null -> current
-            protocol == LlmProtocol.OPENAI -> chunk
-            current == null -> chunk
-            else ->
+            chunk == null -> {
+                current
+            }
+
+            protocol == LlmProtocol.OPENAI -> {
+                chunk
+            }
+
+            current == null -> {
+                chunk
+            }
+
+            else -> {
                 LlmUsage(
                     inputTokens = if (chunk.inputTokens > 0) chunk.inputTokens else current.inputTokens,
                     outputTokens = if (chunk.outputTokens > 0) chunk.outputTokens else current.outputTokens,
                 )
+            }
         }
 
     private companion object {

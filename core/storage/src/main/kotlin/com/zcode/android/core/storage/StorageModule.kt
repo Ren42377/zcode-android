@@ -6,8 +6,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)

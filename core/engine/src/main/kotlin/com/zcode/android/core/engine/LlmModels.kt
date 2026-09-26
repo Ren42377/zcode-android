@@ -70,9 +70,19 @@ object ProviderPresets {
         listOf(
             ProviderPreset("zai-open-platform", "Z.ai Open Platform", "https://api.z.ai/api/paas/v4", LlmProtocol.OPENAI),
             ProviderPreset("zai-coding-plan", "Z.ai Coding Plan", "https://api.z.ai/api/coding/paas/v4", LlmProtocol.OPENAI),
-            ProviderPreset("zai-coding-plan-anthropic", "Z.ai Coding Plan (Anthropic)", "https://api.z.ai/api/anthropic", LlmProtocol.ANTHROPIC),
+            ProviderPreset(
+                "zai-coding-plan-anthropic",
+                "Z.ai Coding Plan (Anthropic)",
+                "https://api.z.ai/api/anthropic",
+                LlmProtocol.ANTHROPIC,
+            ),
             ProviderPreset("bigmodel", "BigModel", "https://open.bigmodel.cn/api/paas/v4", LlmProtocol.OPENAI),
-            ProviderPreset("bigmodel-coding-plan", "BigModel Coding Plan", "https://open.bigmodel.cn/api/coding/paas/v4", LlmProtocol.OPENAI),
+            ProviderPreset(
+                "bigmodel-coding-plan",
+                "BigModel Coding Plan",
+                "https://open.bigmodel.cn/api/coding/paas/v4",
+                LlmProtocol.OPENAI,
+            ),
         )
 
     fun byId(id: String): ProviderPreset? = all.firstOrNull { it.id == id }

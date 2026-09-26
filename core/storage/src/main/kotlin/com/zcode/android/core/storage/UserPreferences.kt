@@ -13,7 +13,9 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 
 // App preferences backed by DataStore. Values mirror the ZCode setting.json
 // scope: provider and model selection, thinking effort, theme.
-class UserPreferences(private val context: Context) {
+class UserPreferences(
+    private val context: Context,
+) {
     val onboarded: Flow<Boolean> =
         context.dataStore.data.map { it[KEY_ONBOARDED] ?: false }
 

@@ -30,15 +30,16 @@ object OpenAiChunkParser {
                 events.add(LlmEvent.TextDelta(text))
             }
         }
-        val usage = (root["usage"] as? JsonObject)?.let { usage ->
-            val prompt = (usage["prompt_tokens"] as? JsonPrimitive)?.content?.toIntOrNull()
-            val completion = (usage["completion_tokens"] as? JsonPrimitive)?.content?.toIntOrNull()
-            if (prompt == null && completion == null) {
-                null
-            } else {
-                LlmUsage(inputTokens = prompt ?: 0, outputTokens = completion ?: 0)
+        val usage =
+            (root["usage"] as? JsonObject)?.let { usage ->
+                val prompt = (usage["prompt_tokens"] as? JsonPrimitive)?.content?.toIntOrNull()
+                val completion = (usage["completion_tokens"] as? JsonPrimitive)?.content?.toIntOrNull()
+                if (prompt == null && completion == null) {
+                    null
+                } else {
+                    LlmUsage(inputTokens = prompt ?: 0, outputTokens = completion ?: 0)
+                }
             }
-        }
         return Pair(events, usage)
     }
 }

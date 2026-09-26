@@ -19,7 +19,5 @@ object Sse {
         return payload
     }
 
-    fun isDone(line: String): Boolean {
-        return line.startsWith(DATA_PREFIX) && line.removePrefix(DATA_PREFIX).trim() == "[DONE]"
-    }
+    fun isDone(line: String): Boolean = line.startsWith(DATA_PREFIX) && line.removePrefix(DATA_PREFIX).trim() == "[DONE]"
 }

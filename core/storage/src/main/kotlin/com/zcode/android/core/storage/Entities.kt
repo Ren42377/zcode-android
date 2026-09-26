@@ -1,8 +1,8 @@
 package com.zcode.android.core.storage
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "sessions")

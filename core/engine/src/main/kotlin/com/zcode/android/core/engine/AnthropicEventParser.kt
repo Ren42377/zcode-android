@@ -22,6 +22,7 @@ object AnthropicEventParser {
             "message_start" -> {
                 usage = parseMessageStart(root)
             }
+
             "content_block_delta" -> {
                 val delta = root["delta"] as? JsonObject
                 when ((delta?.get("type") as? JsonPrimitive)?.contentOrNull) {
@@ -31,6 +32,7 @@ object AnthropicEventParser {
                             events.add(LlmEvent.TextDelta(text))
                         }
                     }
+
                     "thinking_delta" -> {
                         val thinking = (delta?.get("thinking") as? JsonPrimitive)?.contentOrNull
                         if (!thinking.isNullOrEmpty()) {
@@ -39,6 +41,7 @@ object AnthropicEventParser {
                     }
                 }
             }
+
             "message_delta" -> {
                 val output = ((root["usage"] as? JsonObject)?.get("output_tokens") as? JsonPrimitive)?.content?.toIntOrNull()
                 if (output != null) {

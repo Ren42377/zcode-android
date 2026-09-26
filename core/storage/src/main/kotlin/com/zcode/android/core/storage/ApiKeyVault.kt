@@ -11,7 +11,9 @@ import javax.crypto.spec.GCMParameterSpec
 // Stores API keys encrypted with an AES/GCM key that lives inside the Android
 // Keystore. Ciphertext (with its IV) is persisted in app-private preferences;
 // the plaintext key never reaches a file, log, or backup. See ADR 0003.
-class ApiKeyVault(private val context: Context) {
+class ApiKeyVault(
+    private val context: Context,
+) {
     @Synchronized
     fun save(
         providerId: String,
@@ -30,7 +32,11 @@ class ApiKeyVault(private val context: Context) {
     fun load(providerId: String): String? {
         val stored = preferences().getString(entryKey(providerId), null) ?: return null
         val (iv, encrypted) = decode(stored)
-        val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.DECRYPT_MODE, keystoreKey(), GCMParameterSpec(GCM_TAG_BITS, iv)) }
+        val cipher =
+            Cipher
+                .getInstance(
+                    TRANSFORMATION,
+                ).apply { init(Cipher.DECRYPT_MODE, keystoreKey(), GCMParameterSpec(GCM_TAG_BITS, iv)) }
         return cipher.doFinal(encrypted).toString(Charsets.UTF_8)
     }
 
@@ -50,11 +56,11 @@ class ApiKeyVault(private val context: Context) {
         }
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
         generator.init(
-            android.security.keystore.KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or android.security.keystore.KeyProperties.PURPOSE_DECRYPT,
-            )
-                .setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
+            android.security.keystore.KeyGenParameterSpec
+                .Builder(
+                    KEY_ALIAS,
+                    android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or android.security.keystore.KeyProperties.PURPOSE_DECRYPT,
+                ).setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE)
                 .build(),
         )
