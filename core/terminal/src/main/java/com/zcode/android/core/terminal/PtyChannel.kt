@@ -11,17 +11,40 @@ internal object PtyChannel {
     }
 
     // Returns [pid, masterFd]; throws IOException on failure.
-    external fun forkExec(cmd: Array<String>, cwd: String, env: Array<String>, rows: Int, cols: Int): IntArray
+    external fun forkExec(
+        cmd: Array<String>,
+        cwd: String,
+        env: Array<String>,
+        rows: Int,
+        cols: Int,
+    ): IntArray
 
-    external fun read(fd: Int, buffer: ByteArray): Int
+    external fun read(
+        fd: Int,
+        buffer: ByteArray,
+    ): Int
 
-    external fun write(fd: Int, bytes: ByteArray): Int
+    external fun write(
+        fd: Int,
+        bytes: ByteArray,
+    ): Int
 
-    external fun resize(fd: Int, rows: Int, cols: Int): Int
+    external fun resize(
+        fd: Int,
+        rows: Int,
+        cols: Int,
+    ): Int
 
-    external fun closeFd(fd: Int): Int
+    external fun closeFd(
+        fd: Int,
+    ): Int
 
-    external fun killProcess(pid: Int, signal: Int): Int
+    external fun killProcess(
+        pid: Int,
+        signal: Int,
+    ): Int
 
-    external fun waitFor(pid: Int): Int
+    external fun waitFor(
+        pid: Int,
+    ): Int
 }

@@ -28,16 +28,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zcode.android.core.designsystem.ZcodeColors
 import org.connectbot.terminal.Terminal
 
-private val helperKeys = listOf(
-    "Tab" to "\t",
-    "Esc" to "\u001B",
-    "Ctrl+C" to "\u0003",
-    "Ctrl+D" to "\u0004",
-    "Left" to "\u001B[D",
-    "Up" to "\u001B[A",
-    "Down" to "\u001B[B",
-    "Right" to "\u001B[C",
-)
+private val helperKeys =
+    listOf(
+        "Tab" to "\t",
+        "Esc" to "\u001B",
+        "Ctrl+C" to "\u0003",
+        "Ctrl+D" to "\u0004",
+        "Left" to "\u001B[D",
+        "Up" to "\u001B[A",
+        "Down" to "\u001B[B",
+        "Right" to "\u001B[C",
+    )
 
 @Composable
 fun TerminalScreen(

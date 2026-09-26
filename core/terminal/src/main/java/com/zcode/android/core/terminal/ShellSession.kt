@@ -35,15 +35,16 @@ class ShellSession internal constructor(
     // Reads the next chunk of PTY output into the buffer. Returns the number of
     // bytes read, or -1 once the child has exited (EIO on the master is the normal
     // end of a session). Other failures throw.
-    suspend fun read(buffer: ByteArray): Int = withContext(Dispatchers.IO) {
-        val count = PtyChannel.read(masterFd, buffer)
-        when {
-            count > 0 -> count
-            count == 0 -> 0
-            count == -EIO -> -1
-            else -> throw IOException("pty read failed with errno ${-count}")
+    suspend fun read(buffer: ByteArray): Int =
+        withContext(Dispatchers.IO) {
+            val count = PtyChannel.read(masterFd, buffer)
+            when {
+                count > 0 -> count
+                count == 0 -> 0
+                count == -EIO -> -1
+                else -> throw IOException("pty read failed with errno ${-count}")
+            }
         }
-    }
 
     // Sends bytes to the shell without blocking the caller.
     fun write(bytes: ByteArray) {
@@ -52,7 +53,10 @@ class ShellSession internal constructor(
         }
     }
 
-    fun resize(rows: Int, columns: Int) {
+    fun resize(
+        rows: Int,
+        columns: Int,
+    ) {
         if (!closed) {
             scope.launch {
                 PtyChannel.resize(masterFd, rows, columns)
@@ -73,9 +77,10 @@ class ShellSession internal constructor(
     }
 
     // Blocks until the child exits and returns its exit code.
-    suspend fun awaitExit(): Int = withContext(Dispatchers.IO) {
-        PtyChannel.waitFor(pid)
-    }
+    suspend fun awaitExit(): Int =
+        withContext(Dispatchers.IO) {
+            PtyChannel.waitFor(pid)
+        }
 
     companion object {
         private const val EIO = 5
@@ -90,13 +95,14 @@ class ShellSession internal constructor(
             rows: Int = 24,
             columns: Int = 80,
         ): ShellSession {
-            val result = PtyChannel.forkExec(
-                cmd = arrayOf("/system/bin/sh", "-i"),
-                cwd = workingDirectory,
-                env = buildEnvironment(homeDirectory, tmpDirectory, nativeLibraryDir, term = "xterm-256color"),
-                rows = rows,
-                cols = columns,
-            )
+            val result =
+                PtyChannel.forkExec(
+                    cmd = arrayOf("/system/bin/sh", "-i"),
+                    cwd = workingDirectory,
+                    env = buildEnvironment(homeDirectory, tmpDirectory, nativeLibraryDir, term = "xterm-256color"),
+                    rows = rows,
+                    cols = columns,
+                )
             return ShellSession(pid = result[0], masterFd = result[1])
         }
 
@@ -105,11 +111,12 @@ class ShellSession internal constructor(
             tmpDirectory: String,
             nativeLibraryDir: String,
             term: String,
-        ): Array<String> = arrayOf(
-            "PATH=/system/bin:/system/xbin:$nativeLibraryDir",
-            "HOME=$homeDirectory",
-            "TMPDIR=$tmpDirectory",
-            "TERM=$term",
-        )
+        ): Array<String> =
+            arrayOf(
+                "PATH=/system/bin:/system/xbin:$nativeLibraryDir",
+                "HOME=$homeDirectory",
+                "TMPDIR=$tmpDirectory",
+                "TERM=$term",
+            )
     }
 }
