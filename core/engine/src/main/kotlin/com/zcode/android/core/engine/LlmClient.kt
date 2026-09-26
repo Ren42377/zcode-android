@@ -43,7 +43,7 @@ class LlmClient(
                     Request
                         .Builder()
                         .url(endpointUrl(endpoint))
-                        .headers(endpoint.headers(apiKey))
+                        .headers(endpoint.headers())
                         .post(endpoint.requestBody(request).toRequestBody(JSON_MEDIA_TYPE))
                         .build(),
                 )
@@ -95,7 +95,7 @@ class LlmClient(
                 Request
                     .Builder()
                     .url(url)
-                    .headers(endpoint.headers(endpoint.apiKey))
+                    .headers(endpoint.headers())
                     .get()
                     .build()
             client.newCall(request).execute().use { response ->
@@ -113,7 +113,7 @@ class LlmClient(
                 LlmProtocol.ANTHROPIC -> "/v1/messages"
             }
 
-    private fun LlmEndpoint.headers(apiKey: String) =
+    private fun LlmEndpoint.headers() =
         okhttp3.Headers
             .Builder()
             .apply {
