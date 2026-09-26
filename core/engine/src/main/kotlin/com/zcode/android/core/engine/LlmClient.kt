@@ -77,6 +77,35 @@ class LlmClient(
             }
         }
 
+    // Performs one lightweight request to confirm the endpoint and key work.
+    suspend fun validate(endpoint: LlmEndpoint) {
+        withContext(Dispatchers.IO) {
+            val url =
+                endpoint.baseUrl.trimEnd('/') +
+                    when (endpoint.protocol) {
+                        LlmProtocol.OPENAI -> {
+                            "/models"
+                        }
+
+                        LlmProtocol.ANTHROPIC -> {
+                            "/v1/models"
+                        }
+                    }
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .headers(endpoint.headers(endpoint.apiKey))
+                    .get()
+                    .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("validation failed with HTTP ${response.code}")
+                }
+            }
+        }
+    }
+
     private fun endpointUrl(endpoint: LlmEndpoint): String =
         endpoint.baseUrl.trimEnd('/') +
             when (endpoint.protocol) {
