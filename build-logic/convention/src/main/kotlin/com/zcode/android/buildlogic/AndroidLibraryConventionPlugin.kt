@@ -12,8 +12,8 @@ abstract class AndroidLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply("com.android.library")
             extensions.configure<LibraryExtension> {
-                compileSdk = AndroidSdk.compileSdk
-                defaultConfig.minSdk = AndroidSdk.minSdk
+                compileSdk = AndroidSdk.COMPILE_SDK
+                defaultConfig.minSdk = AndroidSdk.MIN_SDK
                 compileOptions {
                     sourceCompatibility = JavaVersion.VERSION_17
                     targetCompatibility = JavaVersion.VERSION_17

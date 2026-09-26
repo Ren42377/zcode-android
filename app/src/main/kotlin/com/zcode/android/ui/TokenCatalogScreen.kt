@@ -23,39 +23,44 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.zcode.android.core.designsystem.ZcodeColors
 
-private data class Token(val name: String, val color: Color)
+private data class Token(
+    val name: String,
+    val color: Color,
+)
 
 // Every color token of the ZCode theme, shown on one screen so the design system
 // values can be verified visually on a device.
-private val tokens = listOf(
-    Token("bg", ZcodeColors.bg),
-    Token("panel", ZcodeColors.panel),
-    Token("element", ZcodeColors.element),
-    Token("userMessage", ZcodeColors.userMessage),
-    Token("text", ZcodeColors.text),
-    Token("muted", ZcodeColors.muted),
-    Token("primary", ZcodeColors.primary),
-    Token("secondary", ZcodeColors.secondary),
-    Token("error", ZcodeColors.error),
-    Token("warning", ZcodeColors.warning),
-    Token("success", ZcodeColors.success),
-    Token("info", ZcodeColors.info),
-    Token("border", ZcodeColors.border),
-    Token("borderSubtle", ZcodeColors.borderSubtle),
-    Token("diffAddedBg", ZcodeColors.diffAddedBg),
-    Token("diffAddedLineBg", ZcodeColors.diffAddedLineBg),
-    Token("diffRemovedBg", ZcodeColors.diffRemovedBg),
-    Token("diffRemovedLineBg", ZcodeColors.diffRemovedLineBg),
-)
+private val tokens =
+    listOf(
+        Token("bg", ZcodeColors.bg),
+        Token("panel", ZcodeColors.panel),
+        Token("element", ZcodeColors.element),
+        Token("userMessage", ZcodeColors.userMessage),
+        Token("text", ZcodeColors.text),
+        Token("muted", ZcodeColors.muted),
+        Token("primary", ZcodeColors.primary),
+        Token("secondary", ZcodeColors.secondary),
+        Token("error", ZcodeColors.error),
+        Token("warning", ZcodeColors.warning),
+        Token("success", ZcodeColors.success),
+        Token("info", ZcodeColors.info),
+        Token("border", ZcodeColors.border),
+        Token("borderSubtle", ZcodeColors.borderSubtle),
+        Token("diffAddedBg", ZcodeColors.diffAddedBg),
+        Token("diffAddedLineBg", ZcodeColors.diffAddedLineBg),
+        Token("diffRemovedBg", ZcodeColors.diffRemovedBg),
+        Token("diffRemovedLineBg", ZcodeColors.diffRemovedLineBg),
+    )
 
 @Composable
 fun TokenCatalogScreen() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ZcodeColors.bg)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(ZcodeColors.bg)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -94,10 +99,11 @@ fun TokenCatalogScreen() {
 @Composable
 private fun TokenSwatch(color: Color) {
     Box(
-        modifier = Modifier
-            .size(36.dp)
-            .background(color = color, shape = RoundedCornerShape(8.dp))
-            .border(width = 1.dp, color = ZcodeColors.border, shape = RoundedCornerShape(8.dp)),
+        modifier =
+            Modifier
+                .size(36.dp)
+                .background(color = color, shape = RoundedCornerShape(8.dp))
+                .border(width = 1.dp, color = ZcodeColors.border, shape = RoundedCornerShape(8.dp)),
     )
 }
 

@@ -12,10 +12,10 @@ abstract class AndroidApplicationConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply("com.android.application")
             extensions.configure<ApplicationExtension> {
-                compileSdk = AndroidSdk.compileSdk
+                compileSdk = AndroidSdk.COMPILE_SDK
                 defaultConfig {
-                    minSdk = AndroidSdk.minSdk
-                    targetSdk = AndroidSdk.targetSdk
+                    minSdk = AndroidSdk.MIN_SDK
+                    targetSdk = AndroidSdk.TARGET_SDK
                 }
                 compileOptions {
                     sourceCompatibility = JavaVersion.VERSION_17

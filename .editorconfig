@@ -11,6 +11,8 @@ indent_size = 4
 ktlint_code_style = ktlint_official
 ktlint_standard_trailing-comma-on-call-site = enabled
 ktlint_standard_trailing-comma-on-declaration-site = enabled
+# Composable functions are PascalCase by Compose convention, which the rule does not recognize.
+ktlint_standard_function-naming = disabled
 
 [*.{yml,yaml}]
 indent_size = 2
