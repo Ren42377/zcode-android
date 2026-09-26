@@ -36,7 +36,7 @@ class ConversationEngine
         ): TurnResult {
             val text = StringBuilder()
             val thinking = StringBuilder()
-            val usage =
+            val outcome =
                 client.stream(
                     request =
                         LlmRequest(
@@ -64,7 +64,7 @@ class ConversationEngine
             return TurnResult(
                 content = text.toString(),
                 thinking = thinking.toString().ifEmpty { null },
-                usage = usage,
+                usage = outcome.usage,
             )
         }
 
