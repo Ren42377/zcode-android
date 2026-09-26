@@ -1,0 +1,43 @@
+name: Format
+
+# One-shot maintenance workflow. Runs ktlint --format over the Kotlin sources and
+# commits the result. Run it manually from the Actions tab after large code drops,
+# so style findings never waste a CI round trip.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    name: Apply ktlint format and commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Run ktlint format
+        run: |
+          curl -sSLo ktlint https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint
+          chmod +x ktlint
+          ./ktlint --format --relative "**/*.kt" "**/*.kts" "!**/build/**" "!core/terminal/src/main/java/org/connectbot/**" || true
+
+      - name: Commit formatted sources
+        run: |
+          if git status --porcelain | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Apply ktlint format"
+            git push
+          else
+            echo "Sources are already formatted"
+          fi
