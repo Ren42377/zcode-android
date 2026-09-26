@@ -17,7 +17,6 @@ composeBom = "2026.09.00"
 coreKtx = "1.19.1"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
-termlib = "0.3.6"
 junit = "4.13.2"
 
 [libraries]
@@ -50,11 +49,6 @@ okhttp-logging-interceptor = { module = "com.squareup.okhttp3:logging-intercepto
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
-
-# Pinned for milestone M1 (terminal emulator). The JitPack build for this tag did
-# not resolve during the foundation milestone; see docs/terminal.md and ADR 0002
-# before depending on it. Vendoring the Apache-2.0 sources is the fallback.
-termlib = { module = "com.github.connectbot:termlib", version.ref = "termlib" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 

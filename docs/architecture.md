@@ -21,7 +21,7 @@ The agent engine is written natively in Kotlin rather than running the original 
 | `:core:agent` | Agent loop, tool orchestration, compaction, permission modes (planned, milestone M2 and later) |
 | `:core:engine` | LLM clients: OpenAI compatible and Anthropic compatible, SSE streaming (planned, M2) |
 | `:core:tools` | Tool implementations: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, WebFetch, WebSearch, Task, AskUserQuestion (planned, M3) |
-| `:core:terminal` | PTY via JNI, shell sessions, exec service, Termux bridge, terminal emulator wrapper (planned, M1) |
+| `:core:terminal` | PTY via JNI, shell sessions, exec service, Termux bridge, vendored termlib renderer (planned, M1) |
 | `:core:mcp` | MCP client for stdio, HTTP, and SSE transports (planned, M4) |
 | `:core:storage` | Room database for sessions, messages, and usage; DataStore preferences; encrypted key storage (planned, M2) |
 | `:core:config` | ZCode compatible config files, skills, commands, and plugin loaders (planned, M4) |
@@ -55,7 +55,7 @@ These dependencies are wired incrementally as the code that uses them lands, to 
 | Networking | OkHttp 5.5.0 with kotlinx.serialization 1.11.0 |
 | Database | Room 2.8.5 |
 | Preferences | DataStore 1.2.1 plus JSON config files with kotlinx.serialization |
-| Terminal UI | connectbot/termlib plus a JNI PTY implementation (see [docs/terminal.md](terminal.md)) |
+| Terminal UI | connectbot/termlib 0.3.6 vendored into `:core:terminal` (Apache-2.0, libvterm MIT), plus a JNI PTY implementation (see [docs/terminal.md](terminal.md)) |
 | Images | Coil 3.6.3 |
 | SDK levels | minSdk 26, targetSdk 35, compileSdk 37 |
 

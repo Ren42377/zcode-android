@@ -35,9 +35,7 @@ All terminal code lives in `:core:terminal`:
 
 ## Terminal emulator
 
-The renderer is `com.github.connectbot:termlib`. Requirements: 256 color and truecolor support, scrolling, selection and copy, adjustable font size, and double-width CJK characters.
-
-Known issue recorded during the foundation milestone: the JitPack build for `com.github.connectbot:termlib:0.3.6` did not resolve on 2026-09-26 (the POM request returned 404). The version catalog pins the coordinate, but nothing depends on it yet, so no build resolves it. When milestone M1 wires the dependency, it must either confirm a working JitPack tag or fall back to vendoring the Apache-2.0 sources into this repository, as allowed by [ADR 0002](adr/0002-terminal-hybrid.md).
+The renderer is vendored from connectbot/termlib 0.3.6 (Apache-2.0, which embeds libvterm under MIT) inside `:core:terminal`. Upstream publishes no Maven artifact, and its JitPack build fails because the upstream build applies Maven signing unconditionally. Provenance and local modifications are recorded in `core/terminal/VENDORED.md`, and the decision is captured in [ADR 0002](adr/0002-terminal-hybrid.md).
 
 Tool output from the Bash tool is not rendered in the TerminalView. It appears as a tool card in the chat transcript, the same way ZCode shows tool output in its transcript.
 
