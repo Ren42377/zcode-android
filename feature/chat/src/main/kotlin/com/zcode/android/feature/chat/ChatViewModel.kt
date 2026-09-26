@@ -8,11 +8,16 @@ import com.zcode.android.core.agent.AgentEvent
 import com.zcode.android.core.agent.AgentLoop
 import com.zcode.android.core.agent.ApprovalAnswer
 import com.zcode.android.core.agent.ApprovalCoordinator
+import com.zcode.android.core.agent.MemoryStore
 import com.zcode.android.core.agent.PermissionMode
+import com.zcode.android.core.agent.SkillLoader
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.LlmEndpoint
 import com.zcode.android.core.engine.LlmMessage
+import com.zcode.android.core.engine.LlmClient
+import com.zcode.android.core.engine.LlmEvent
 import com.zcode.android.core.engine.LlmProtocol
+import com.zcode.android.core.engine.LlmRequest
 import com.zcode.android.core.engine.LlmRole
 import com.zcode.android.core.engine.LlmUsage
 import com.zcode.android.core.engine.ProviderPresets
@@ -27,7 +32,6 @@ import com.zcode.android.core.storage.ToolEventEntity
 import com.zcode.android.core.storage.UserPreferences
 import com.zcode.android.core.terminal.ExecService
 import com.zcode.android.core.tools.BashTool
-import com.zcode.android.core.tools.ExecServiceHolder
 import com.zcode.android.core.tools.TodoItem
 import com.zcode.android.core.tools.ToolContext
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -101,6 +105,9 @@ class ChatViewModel
         private val apiKeyVault: ApiKeyVault,
         private val agentLoop: AgentLoop,
         private val approvals: ApprovalCoordinator,
+        private val client: LlmClient,
+        private val memoryStore: MemoryStore,
+        private val skillLoader: SkillLoader,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
 
@@ -143,13 +150,19 @@ class ChatViewModel
         private val _error = MutableStateFlow<String?>(null)
         val error: StateFlow<String?> = _error.asStateFlow()
 
+        private val _suggestions = MutableStateFlow<List<SlashCommand>>(emptyList())
+        val suggestions: StateFlow<List<SlashCommand>> = _suggestions.asStateFlow()
+
+        private val _pickerOpen = MutableStateFlow(false)
+        val pickerOpen: StateFlow<Boolean> = _pickerOpen.asStateFlow()
+
         private var turnJob: Job? = null
         private var activeCall: Call? = null
 
         @Volatile
         private var stopped = false
 
-        private val exec = ExecServiceHolder.exec
+        private val exec = ExecService()
         private val httpClient = OkHttpClient()
 
         fun send(prompt: String) {
@@ -183,6 +196,138 @@ class ChatViewModel
         fun dismissError() {
             _error.value = null
         }
+
+        fun onInputChanged(value: String) {
+            _suggestions.value =
+                if (value.startsWith("/")) {
+                    SlashCommands.matching(value.removePrefix("/").trim())
+                } else {
+                    emptyList()
+                }
+        }
+
+        fun clearSuggestions() {
+            _suggestions.value = emptyList()
+        }
+
+        fun tryHandleSlash(raw: String) {
+            val body = raw.removePrefix("/").trim()
+            val name = body.substringBefore(' ')
+            val args = body.substringAfter(' ', missingDelimiterValue = "").trim()
+            when (name) {
+                "help" -> insertLocalMessage(helpText())
+                "model" -> _pickerOpen.value = true
+                "mode" -> cycleMode()
+                "effort" -> cycleEffort()
+                "clear" -> sessionKey.value = NEW_SESSION
+                "compact" -> compact()
+                "goal" -> {
+                    if (args.isNotEmpty()) {
+                        viewModelScope.launch {
+                            ensureSession("Goal")
+                            insertRoleMessage(ROLE_GOAL, "Session goal: $args")
+                        }
+                    }
+                }
+
+                "init" -> initAgentsMd()
+                "memory" -> showMemory()
+            }
+        }
+
+        fun pickerShown() {
+            _pickerOpen.value = false
+        }
+
+        private fun cycleEffort() {
+            viewModelScope.launch {
+                val order = listOf<String?>(null, "LOW", "HIGH", "MAX")
+                val current = preferences.thinkingEffort.first()
+                val next = order[(order.indexOf(current) + 1) % order.size]
+                preferences.setThinkingEffort(next)
+            }
+        }
+
+        private fun compact() {
+            if (turnJob?.isActive == true) {
+                return
+            }
+            turnJob =
+                viewModelScope.launch {
+                    val endpoint = resolveEndpoint()
+                    if (endpoint == null) {
+                        _error.value = "No provider configured"
+                        return@launch
+                    }
+                    val history = messageDao.list(sessionKey.value)
+                    if (history.size < 3) {
+                        insertLocalMessage("Nothing to compact yet")
+                        return@launch
+                    }
+                    _busy.value = true
+                    try {
+                        val transcript =
+                            history.joinToString(separator = "
+
+") { message ->
+                                "${message.role}: ${message.content}".take(2_000)
+                            }.take(MAX_COMPACT_CHARS)
+                        val text = StringBuilder()
+                        client.stream(
+                            request =
+                                LlmRequest(
+                                    model = currentModel(),
+                                    messages =
+                                        listOf(
+                                            LlmMessage(role = LlmRole.SYSTEM, content = COMPACTION_PROMPT),
+                                            LlmMessage(role = LlmRole.USER, content = transcript),
+                                        ),
+                                ),
+                            endpoint = endpoint,
+                            onEvent = { event ->
+                                if (event is LlmEvent.TextDelta) {
+                                    text.append(event.text)
+                                }
+                            },
+                        )
+                        insertRoleMessage(ROLE_SUMMARY, text.toString())
+                    } catch (_: IOException) {
+                        _error.value = "Compaction failed"
+                    } finally {
+                        _busy.value = false
+                    }
+                }
+        }
+
+        private fun initAgentsMd() {
+            viewModelScope.launch {
+                ensureSession("AGENTS.md")
+                val file = File(workspace(), "AGENTS.md")
+                if (file.isFile) {
+                    insertLocalMessage("AGENTS.md already exists in the workspace.")
+                } else {
+                    file.writeText(AGENTS_TEMPLATE, Charsets.UTF_8)
+                    insertLocalMessage("Created AGENTS.md in the workspace.")
+                }
+            }
+        }
+
+        private fun showMemory() {
+            viewModelScope.launch {
+                ensureSession("Memory")
+                val content = memoryStore.read(workspace())
+                insertLocalMessage(content ?: "No memory stored for this workspace yet.")
+            }
+        }
+
+        private suspend fun insertLocalMessage(content: String) {
+            ensureSession(content.lineSequence().firstOrNull().orEmpty().ifEmpty { "Note" }.take(TITLE_CHARS))
+            insertRoleMessage(ROLE_ASSISTANT, content)
+        }
+
+        private fun helpText(): String =
+            SlashCommands.all.joinToString(separator = "
+") { "/${it.name} - ${it.description}" }
 
         fun selectModel(modelId: String) {
             viewModelScope.launch {
@@ -234,7 +379,8 @@ class ChatViewModel
                     try {
                         val usage =
                             agentLoop.run(
-                                history = messageDao.list(sessionKey.value).map { it.toLlmMessage() },
+                                history = buildLlmHistory(messageDao.list(sessionKey.value)),
+                                instructions = buildInstructions(),
                                 endpoint = endpoint,
                                 model = currentModel(),
                                 maxOutputTokens = BuiltinModels.byId(currentModel())?.maxOutputTokens,
@@ -408,18 +554,79 @@ class ChatViewModel
             sessionDao.touch(sessionKey.value, now)
         }
 
+        private suspend fun ensureSession(title: String) {
+            if (sessionKey.value == NEW_SESSION) {
+                createSession(title)
+            }
+        }
+
+        private suspend fun insertRoleMessage(
+            role: String,
+            content: String,
+        ) {
+            val now = System.currentTimeMillis()
+            messageDao.insert(
+                MessageEntity(
+                    id = UUID.randomUUID().toString(),
+                    sessionId = sessionKey.value,
+                    role = role,
+                    content = content,
+                    createdAt = now,
+                ),
+            )
+            sessionDao.touch(sessionKey.value, now)
+        }
+
+        // History for the model starts at the last summary or goal marker so
+        // compaction actually reclaims context.
+        private fun buildLlmHistory(all: List<MessageEntity>): List<LlmMessage> {
+            val lastAnchor = all.indexOfLast { it.role == ROLE_SUMMARY || it.role == ROLE_GOAL }
+            val slice = if (lastAnchor >= 0) all.subList(lastAnchor, all.size) else all
+            return slice.map { message ->
+                when (message.role) {
+                    ROLE_SUMMARY -> LlmMessage(role = LlmRole.SYSTEM, content = "Conversation summary:
+${message.content}")
+                    ROLE_GOAL -> LlmMessage(role = LlmRole.SYSTEM, content = message.content)
+                    ROLE_USER -> LlmMessage(role = LlmRole.USER, content = message.content)
+                    else -> LlmMessage(role = LlmRole.ASSISTANT, content = message.content)
+                }
+            }
+        }
+
+        // Workspace instructions: AGENTS.md, project memory, and available skills
+        // are injected into the system prompt, matching the ZCode behavior.
+        private fun buildInstructions(): String? {
+            val parts = mutableListOf<String>()
+            val agentsFile = File(workspace(), "AGENTS.md")
+            if (agentsFile.isFile) {
+                parts.add("Workspace instructions (AGENTS.md):
+" + agentsFile.readText(Charsets.UTF_8).take(MAX_INSTRUCTION_CHARS))
+            }
+            memoryStore.read(workspace())?.let { memory ->
+                parts.add("Project memory (MEMORY.md):
+" + memory.take(MAX_INSTRUCTION_CHARS))
+            }
+            val skills = skillLoader.load(workspace())
+            if (skills.isNotEmpty()) {
+                val list =
+                    skills.joinToString(separator = "
+") { skill ->
+                        "- ${skill.name}: ${skill.description} (read ${skill.path.path} for the full skill)"
+                    }
+                parts.add("Available skills:
+$list")
+            }
+            return if (parts.isEmpty()) null else parts.joinToString(separator = "
+
+")
+        }
+
         private fun publishStreaming(
             text: StringBuilder,
             thinking: StringBuilder,
         ) {
             _streaming.value = StreamingState(thinking = thinking.toString(), content = text.toString())
         }
-
-        private fun MessageEntity.toLlmMessage(): LlmMessage =
-            LlmMessage(
-                role = if (role == ROLE_USER) LlmRole.USER else LlmRole.ASSISTANT,
-                content = content,
-            )
 
         companion object {
             const val SESSION_ARG = "sessionId"
@@ -428,5 +635,20 @@ class ChatViewModel
             private const val ROLE_ASSISTANT = "assistant"
             private const val TITLE_CHARS = 48
             private const val MODE_BUILD = "build"
+            private const val ROLE_SUMMARY = "summary"
+            private const val ROLE_GOAL = "goal"
+            private const val MAX_COMPACT_CHARS = 48_000
+            private const val MAX_INSTRUCTION_CHARS = 12_000
+            private const val COMPACTION_PROMPT =
+                "Summarize this conversation. Capture every decision made, every file changed, " +
+                    "commands run, and test results. Be complete but concise."
+            private const val AGENTS_TEMPLATE =
+                "# AGENTS.md
+
+" +
+                    "Instructions for the ZCode agent working in this workspace.
+" +
+                    "Describe build commands, conventions, and constraints here.
+"
         }
     }

@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":core:agent"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:engine"))
+    implementation(project(":core:tools"))
     implementation(project(":core:storage"))
 
     implementation(platform(libs.androidx.compose.bom))

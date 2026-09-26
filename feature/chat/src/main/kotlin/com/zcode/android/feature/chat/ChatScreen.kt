@@ -68,12 +68,13 @@ fun ChatScreen(
     val queued by viewModel.queued.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val suggestions by viewModel.suggestions.collectAsStateWithLifecycle()
+    val pickerOpen by viewModel.pickerOpen.collectAsStateWithLifecycle()
     val model by viewModel.model.collectAsStateWithLifecycle()
     val effort by viewModel.thinkingEffort.collectAsStateWithLifecycle()
     val mode by viewModel.mode.collectAsStateWithLifecycle()
 
     var input by remember { mutableStateOf("") }
-    var pickerVisible by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     val rowCount = rows.size + runningTools.size + if (streaming == null) 0 else 1
@@ -229,6 +230,46 @@ fun ChatScreen(
             }
         }
 
+        if (suggestions.isNotEmpty()) {
+            Surface(
+                color = ZcodeColors.panel,
+                shape = RoundedCornerShape(12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                    suggestions.forEach { command ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        input = "/" + command.name + " "
+                                        viewModel.clearSuggestions()
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "/" + command.name,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontFamily = FontFamily.Monospace,
+                                color = ZcodeColors.primary,
+                            )
+                            Spacer(modifier = Modifier.padding(start = 8.dp))
+                            Text(
+                                text = command.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ZcodeColors.muted,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         pendingApproval?.let { approval ->
             ApprovalPanel(
                 approval = approval,
@@ -238,23 +279,31 @@ fun ChatScreen(
 
         InputRow(
             value = input,
-            onValueChange = { input = it },
+            onValueChange = { value ->
+                input = value
+                viewModel.onInputChanged(value)
+            },
             busy = busy,
             onSend = {
-                viewModel.send(input)
+                if (input.startsWith("/")) {
+                    viewModel.tryHandleSlash(input)
+                    viewModel.clearSuggestions()
+                } else {
+                    viewModel.send(input)
+                }
                 input = ""
             },
             onStop = viewModel::stop,
         )
     }
 
-    if (pickerVisible) {
+    if (pickerOpen) {
         ModelPickerSheet(
             selectedModel = model,
             selectedEffort = effort,
             onSelectModel = viewModel::selectModel,
             onSelectEffort = viewModel::selectEffort,
-            onDismiss = { pickerVisible = false },
+            onDismiss = viewModel::pickerShown,
         )
     }
 }

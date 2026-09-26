@@ -46,8 +46,9 @@ class AgentLoop
             context: ToolContext,
             onEvent: (AgentEvent) -> Unit,
             onCallStarted: (Call) -> Unit = {},
+            instructions: String? = null,
         ): TurnResult {
-            val messages = mutableListOf(LlmMessage(role = LlmRole.SYSTEM, content = SYSTEM_PROMPT))
+            val messages = mutableListOf(LlmMessage(role = LlmRole.SYSTEM, content = buildSystemPrompt(instructions)))
             messages.addAll(history)
             var totalUsage: LlmUsage? = null
             var lastText = ""
@@ -243,10 +244,15 @@ class AgentLoop
             const val SUMMARY_CHARS = 120
             val json = Json { ignoreUnknownKeys = true }
 
-            // Minimal identity prompt for milestones M2 and M3. Workspace
-            // instructions, memory, and skills are injected by later milestones.
-            const val SYSTEM_PROMPT =
-                "You are ZCode, an AI coding agent running on an Android device. " +
-                    "Help the user with software engineering tasks and be precise and concise."
+            fun buildSystemPrompt(instructions: String?): String {
+                val base =
+                    "You are ZCode, an AI coding agent running on an Android device. " +
+                        "Help the user with software engineering tasks and be precise and concise."
+                return if (instructions.isNullOrEmpty()) {
+                    base
+                } else {
+                    "$base\n\n$instructions"
+                }
+            }
         }
     }
