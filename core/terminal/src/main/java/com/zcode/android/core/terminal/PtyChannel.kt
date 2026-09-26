@@ -35,16 +35,12 @@ internal object PtyChannel {
         cols: Int,
     ): Int
 
-    external fun closeFd(
-        fd: Int,
-    ): Int
+    external fun closeFd(fd: Int): Int
 
     external fun killProcess(
         pid: Int,
         signal: Int,
     ): Int
 
-    external fun waitFor(
-        pid: Int,
-    ): Int
+    external fun waitFor(pid: Int): Int
 }
