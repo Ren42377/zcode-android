@@ -15,6 +15,8 @@ import com.zcode.android.core.tools.ToolOutcome
 import com.zcode.android.core.tools.ToolRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.Call
@@ -35,6 +37,7 @@ class AgentLoop
         private val registry: ToolRegistry,
         private val gate: PermissionGate,
         private val approvals: ApprovalCoordinator,
+        private val hookRunner: HookRunner,
     ) {
         suspend fun run(
             history: List<LlmMessage>,
@@ -47,7 +50,9 @@ class AgentLoop
             onEvent: (AgentEvent) -> Unit,
             onCallStarted: (Call) -> Unit = {},
             instructions: String? = null,
+            hooks: HookConfig? = null,
         ): TurnResult {
+            var stopBlocks = 0
             val messages = mutableListOf(LlmMessage(role = LlmRole.SYSTEM, content = buildSystemPrompt(instructions)))
             messages.addAll(history)
             var totalUsage: LlmUsage? = null
@@ -88,6 +93,18 @@ class AgentLoop
                 totalUsage = mergeUsage(totalUsage, outcome.usage)
                 lastText = text.toString()
                 if (outcome.toolCalls.isEmpty()) {
+                    if (hooks != null && stopBlocks < MAX_STOP_BLOCKS) {
+                        val stop = hookRunner.run("Stop", "session", JsonObject(emptyMap()), hooks, context.shellEnvironment, context.workspaceRoot.path)
+                        if (stop.blocked) {
+                            stopBlocks++
+                            messages +=
+                                LlmMessage(
+                                    role = LlmRole.USER,
+                                    content = "A Stop hook prevented ending the turn: " + (stop.reason ?: "keep working."),
+                                )
+                            continue
+                        }
+                    }
                     break
                 }
                 messages += LlmMessage(role = LlmRole.ASSISTANT, content = lastText, toolCalls = outcome.toolCalls)
@@ -128,6 +145,25 @@ class AgentLoop
                 }
 
                 PermissionDecision.Ask -> {
+                    if (hooks != null) {
+                        val permission =
+                            hookRunner.run(
+                                event = "PermissionRequest",
+                                subject = call.name,
+                                payload =
+                                    buildJsonObject {
+                                        put("tool", call.name)
+                                        put("summary", summary)
+                                    },
+                                config = hooks,
+                                shellEnvironment = context.shellEnvironment,
+                                workingDirectory = context.workspaceRoot.path,
+                            )
+                        if (permission.blocked) {
+                            finishTool(call, onEvent, messages, "Denied by PermissionRequest hook: " + (permission.reason ?: "no reason given"), isError = true)
+                            return
+                        }
+                    }
                     onEvent(AgentEvent.ApprovalRequested(callId = call.id, name = call.name, summary = summary))
                     val answer = approvals.register(call.id).await()
                     when (answer) {
@@ -158,8 +194,27 @@ class AgentLoop
 
                 PermissionDecision.Allow -> {}
             }
-            onEvent(AgentEvent.ToolStarted(callId = call.id, name = call.name, summary = summary))
             val args = parseArguments(call.argumentsJson)
+            if (hooks != null) {
+                val pre =
+                    hookRunner.run(
+                        event = "PreToolUse",
+                        subject = call.name,
+                        payload =
+                            buildJsonObject {
+                                put("tool", call.name)
+                                put("arguments", call.argumentsJson)
+                            },
+                        config = hooks,
+                        shellEnvironment = context.shellEnvironment,
+                        workingDirectory = context.workspaceRoot.path,
+                    )
+                if (pre.blocked) {
+                    finishTool(call, onEvent, messages, "Blocked by PreToolUse hook: " + (pre.reason ?: "no reason given"), isError = true)
+                    return
+                }
+            }
+            onEvent(AgentEvent.ToolStarted(callId = call.id, name = call.name, summary = summary))
             val outcome =
                 try {
                     tool.execute(args, context)
@@ -168,6 +223,26 @@ class AgentLoop
                 }
             if (tool is TodoWriteTool) {
                 onEvent(AgentEvent.TodoListUpdated(tool.parseTodos(args)))
+            }
+            if (hooks != null) {
+                val post =
+                    hookRunner.run(
+                        event = if (outcome.isError) "PostToolUseFailure" else "PostToolUse",
+                        subject = call.name,
+                        payload =
+                            buildJsonObject {
+                                put("tool", call.name)
+                                put("output", outcome.outputForModel.take(4_000))
+                                put("is_error", outcome.isError)
+                            },
+                        config = hooks,
+                        shellEnvironment = context.shellEnvironment,
+                        workingDirectory = context.workspaceRoot.path,
+                    )
+                if (post.blocked) {
+                    finishTool(call, onEvent, messages, "Blocked by hook: " + (post.reason ?: "no reason given"), isError = true)
+                    return
+                }
             }
             messages += LlmMessage(role = LlmRole.TOOL, content = outcome.outputForModel, toolCallId = call.id)
             onEvent(
@@ -242,6 +317,7 @@ class AgentLoop
 
         private companion object {
             const val SUMMARY_CHARS = 120
+            const val MAX_STOP_BLOCKS = 2
             val json = Json { ignoreUnknownKeys = true }
 
             fun buildSystemPrompt(instructions: String?): String {

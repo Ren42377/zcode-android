@@ -8,6 +8,8 @@ import com.zcode.android.core.agent.AgentEvent
 import com.zcode.android.core.agent.AgentLoop
 import com.zcode.android.core.agent.ApprovalAnswer
 import com.zcode.android.core.agent.ApprovalCoordinator
+import com.zcode.android.core.agent.HookConfig
+import com.zcode.android.core.agent.HookRunner
 import com.zcode.android.core.agent.MemoryStore
 import com.zcode.android.core.agent.PermissionMode
 import com.zcode.android.core.agent.SkillLoader
@@ -108,6 +110,7 @@ class ChatViewModel
         private val client: LlmClient,
         private val memoryStore: MemoryStore,
         private val skillLoader: SkillLoader,
+        private val hookRunner: HookRunner,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
 
@@ -160,10 +163,21 @@ class ChatViewModel
         private var activeCall: Call? = null
 
         @Volatile
+        private var sessionStarted = false
+
+        @Volatile
         private var stopped = false
 
         private val exec = ExecService()
         private val httpClient = OkHttpClient()
+
+        init {
+            viewModelScope.launch {
+                sessionKey.collect {
+                    sessionStarted = false
+                }
+            }
+        }
 
         fun send(prompt: String) {
             val trimmed = prompt.trim()
@@ -267,9 +281,7 @@ class ChatViewModel
                     _busy.value = true
                     try {
                         val transcript =
-                            history.joinToString(separator = "
-
-") { message ->
+                            history.joinToString(separator = "\n\n") { message ->
                                 "${message.role}: ${message.content}".take(2_000)
                             }.take(MAX_COMPACT_CHARS)
                         val text = StringBuilder()
@@ -326,8 +338,7 @@ class ChatViewModel
         }
 
         private fun helpText(): String =
-            SlashCommands.all.joinToString(separator = "
-") { "/${it.name} - ${it.description}" }
+            SlashCommands.all.joinToString(separator = "\n") { "/${it.name} - ${it.description}" }
 
         fun selectModel(modelId: String) {
             viewModelScope.launch {
@@ -360,6 +371,33 @@ class ChatViewModel
                         _error.value = "No provider configured"
                         return@launch
                     }
+                    val hookConfig = hookRunner.loadConfig(workspace())
+                    val toolContext = buildToolContext(endpoint)
+                    if (!sessionStarted) {
+                        sessionStarted = true
+                        hookRunner.run(
+                            event = "SessionStart",
+                            subject = "session",
+                            payload = JsonObject(emptyMap()),
+                            config = hookConfig,
+                            shellEnvironment = toolContext.shellEnvironment,
+                            workingDirectory = toolContext.workspaceRoot.path,
+                        )
+                    }
+                    val submit =
+                        hookRunner.run(
+                            event = "UserPromptSubmit",
+                            subject = "user",
+                            payload = JsonObject(emptyMap()),
+                            config = hookConfig,
+                            shellEnvironment = toolContext.shellEnvironment,
+                            workingDirectory = toolContext.workspaceRoot.path,
+                        )
+                    if (submit.blocked) {
+                        _error.value = submit.reason ?: "Prompt blocked by hook"
+                        _busy.value = false
+                        return@launch
+                    }
                     val now = System.currentTimeMillis()
                     messageDao.insert(
                         MessageEntity(
@@ -386,7 +424,8 @@ class ChatViewModel
                                 maxOutputTokens = BuiltinModels.byId(currentModel())?.maxOutputTokens,
                                 thinkingEffort = currentEffort(),
                                 mode = currentMode(),
-                                context = buildToolContext(endpoint),
+                                context = toolContext,
+                                hooks = hookConfig,
                                 onEvent = { event ->
                                     handleEvent(event, text, thinking)
                                 },
@@ -584,8 +623,7 @@ class ChatViewModel
             val slice = if (lastAnchor >= 0) all.subList(lastAnchor, all.size) else all
             return slice.map { message ->
                 when (message.role) {
-                    ROLE_SUMMARY -> LlmMessage(role = LlmRole.SYSTEM, content = "Conversation summary:
-${message.content}")
+                    ROLE_SUMMARY -> LlmMessage(role = LlmRole.SYSTEM, content = "Conversation summary:\n${message.content}")
                     ROLE_GOAL -> LlmMessage(role = LlmRole.SYSTEM, content = message.content)
                     ROLE_USER -> LlmMessage(role = LlmRole.USER, content = message.content)
                     else -> LlmMessage(role = LlmRole.ASSISTANT, content = message.content)
@@ -599,26 +637,20 @@ ${message.content}")
             val parts = mutableListOf<String>()
             val agentsFile = File(workspace(), "AGENTS.md")
             if (agentsFile.isFile) {
-                parts.add("Workspace instructions (AGENTS.md):
-" + agentsFile.readText(Charsets.UTF_8).take(MAX_INSTRUCTION_CHARS))
+                parts.add("Workspace instructions (AGENTS.md):\n" + agentsFile.readText(Charsets.UTF_8).take(MAX_INSTRUCTION_CHARS))
             }
             memoryStore.read(workspace())?.let { memory ->
-                parts.add("Project memory (MEMORY.md):
-" + memory.take(MAX_INSTRUCTION_CHARS))
+                parts.add("Project memory (MEMORY.md):\n" + memory.take(MAX_INSTRUCTION_CHARS))
             }
             val skills = skillLoader.load(workspace())
             if (skills.isNotEmpty()) {
                 val list =
-                    skills.joinToString(separator = "
-") { skill ->
+                    skills.joinToString(separator = "\n") { skill ->
                         "- ${skill.name}: ${skill.description} (read ${skill.path.path} for the full skill)"
                     }
-                parts.add("Available skills:
-$list")
+                parts.add("Available skills:\n$list")
             }
-            return if (parts.isEmpty()) null else parts.joinToString(separator = "
-
-")
+            return if (parts.isEmpty()) null else parts.joinToString(separator = "\n\n")
         }
 
         private fun publishStreaming(
@@ -643,12 +675,8 @@ $list")
                 "Summarize this conversation. Capture every decision made, every file changed, " +
                     "commands run, and test results. Be complete but concise."
             private const val AGENTS_TEMPLATE =
-                "# AGENTS.md
-
-" +
-                    "Instructions for the ZCode agent working in this workspace.
-" +
-                    "Describe build commands, conventions, and constraints here.
-"
+                "# AGENTS.md\n\n" +
+                    "Instructions for the ZCode agent working in this workspace.\n" +
+                    "Describe build commands, conventions, and constraints here.\n"
         }
     }
