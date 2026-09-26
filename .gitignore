@@ -1,0 +1,23 @@
+# Gradle build outputs
+.gradle/
+build/
+
+# Local IDE state
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local Android SDK paths are resolved per machine and never committed
+local.properties
+
+# Signing material lives only in GitHub Actions secrets
+*.jks
+*.p12
+keystore.properties
+
+# Tooling state
+.kotlin/
+*.log
+.DS_Store
