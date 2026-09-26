@@ -138,8 +138,11 @@ fun ChatScreen(
         ) {
             items(rows, key = { rowKey(it) }) { row ->
                 when (row) {
-                    is ChatRow.MessageRow -> MessageBubble(row.entity)
-                    is ChatRow.ToolRow ->
+                    is ChatRow.MessageRow -> {
+                        MessageBubble(row.entity)
+                    }
+
+                    is ChatRow.ToolRow -> {
                         ToolCard(
                             name = row.entity.name,
                             summary = row.entity.summary,
@@ -147,6 +150,7 @@ fun ChatScreen(
                             isError = row.entity.isError,
                             running = false,
                         )
+                    }
                 }
             }
             runningTools.forEach { tool ->

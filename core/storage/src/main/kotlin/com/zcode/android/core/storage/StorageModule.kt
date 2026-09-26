@@ -18,7 +18,8 @@ object StorageModule {
     fun database(
         @ApplicationContext context: Context,
     ): ZcodeDatabase =
-        Room.databaseBuilder(context, ZcodeDatabase::class.java, ZcodeDatabase.NAME)
+        Room
+            .databaseBuilder(context, ZcodeDatabase::class.java, ZcodeDatabase.NAME)
             // Pre release: schema changes rebuild the local database.
             .fallbackToDestructiveMigration()
             .build()

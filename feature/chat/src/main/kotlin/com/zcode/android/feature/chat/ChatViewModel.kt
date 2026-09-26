@@ -12,8 +12,8 @@ import com.zcode.android.core.agent.PermissionMode
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.LlmEndpoint
 import com.zcode.android.core.engine.LlmMessage
-import com.zcode.android.core.engine.LlmRole
 import com.zcode.android.core.engine.LlmProtocol
+import com.zcode.android.core.engine.LlmRole
 import com.zcode.android.core.engine.LlmUsage
 import com.zcode.android.core.engine.ProviderPresets
 import com.zcode.android.core.engine.ThinkingEffort
@@ -32,10 +32,6 @@ import com.zcode.android.core.tools.TodoItem
 import com.zcode.android.core.tools.ToolContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.IOException
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +45,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.OkHttpClient
+import java.io.File
+import java.io.IOException
+import java.util.UUID
+import javax.inject.Inject
 
 data class StreamingState(
     val thinking: String,
@@ -291,7 +291,7 @@ class ChatViewModel
                 is AgentEvent.ToolStarted -> {
                     _runningTools.value =
                         _runningTools.value +
-                            RunningTool(callId = event.callId, name = event.name, summary = event.summary)
+                        RunningTool(callId = event.callId, name = event.name, summary = event.summary)
                 }
 
                 is AgentEvent.ToolFinished -> {
@@ -328,7 +328,12 @@ class ChatViewModel
             sessionDao.upsert(
                 SessionEntity(
                     id = id,
-                    title = seed.lineSequence().firstOrNull().orEmpty().take(TITLE_CHARS),
+                    title =
+                        seed
+                            .lineSequence()
+                            .firstOrNull()
+                            .orEmpty()
+                            .take(TITLE_CHARS),
                     workspacePath = workspace().path,
                     providerId = preferences.providerId.first().orEmpty(),
                     model = currentModel(),
