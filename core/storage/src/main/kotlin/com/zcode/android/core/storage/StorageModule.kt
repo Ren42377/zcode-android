@@ -17,13 +17,20 @@ object StorageModule {
     @Singleton
     fun database(
         @ApplicationContext context: Context,
-    ): ZcodeDatabase = Room.databaseBuilder(context, ZcodeDatabase::class.java, ZcodeDatabase.NAME).build()
+    ): ZcodeDatabase =
+        Room.databaseBuilder(context, ZcodeDatabase::class.java, ZcodeDatabase.NAME)
+            // Pre release: schema changes rebuild the local database.
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     fun sessionDao(database: ZcodeDatabase): SessionDao = database.sessionDao()
 
     @Provides
     fun messageDao(database: ZcodeDatabase): MessageDao = database.messageDao()
+
+    @Provides
+    fun toolEventDao(database: ZcodeDatabase): ToolEventDao = database.toolEventDao()
 
     @Provides
     @Singleton

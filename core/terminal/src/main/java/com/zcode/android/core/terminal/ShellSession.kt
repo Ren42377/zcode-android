@@ -123,7 +123,7 @@ class ShellSession internal constructor(
             return ShellSession(pid = result[0], masterFd = result[1])
         }
 
-        internal fun buildEnvironment(
+        fun buildEnvironment(
             homeDirectory: String,
             tmpDirectory: String,
             nativeLibraryDir: String,

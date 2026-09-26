@@ -38,3 +38,26 @@ data class MessageEntity(
     val outputTokens: Int? = null,
     val createdAt: Long,
 )
+
+// One executed tool call, persisted so transcripts keep the tool cards on resume.
+@Entity(
+    tableName = "tool_events",
+    foreignKeys = [
+        ForeignKey(
+            entity = SessionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sessionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("sessionId")],
+)
+data class ToolEventEntity(
+    @PrimaryKey val id: String,
+    val sessionId: String,
+    val name: String,
+    val summary: String,
+    val output: String,
+    val isError: Boolean,
+    val createdAt: Long,
+)

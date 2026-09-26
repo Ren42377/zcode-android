@@ -1,6 +1,8 @@
 package com.zcode.android.feature.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
@@ -39,50 +42,44 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mikepenz.markdown.m3.Markdown
+import com.zcode.android.core.agent.ApprovalAnswer
+import com.zcode.android.core.agent.PermissionMode
 import com.zcode.android.core.designsystem.ZcodeColors
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.ThinkingEffort
 import com.zcode.android.core.storage.MessageEntity
-
-data class ChatEntry(
-    val id: String,
-    val isUser: Boolean,
-    val content: String,
-    val thinking: String?,
-)
-
-private fun MessageEntity.toEntry(): ChatEntry =
-    ChatEntry(
-        id = id,
-        isUser = role == "user",
-        content = content,
-        thinking = thinking,
-    )
+import com.zcode.android.core.tools.TodoItem
 
 @Composable
 fun ChatScreen(
     onOpenTerminal: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
-    val messages by viewModel.messages.collectAsStateWithLifecycle()
+    val rows by viewModel.rows.collectAsStateWithLifecycle()
     val streaming by viewModel.streaming.collectAsStateWithLifecycle()
+    val runningTools by viewModel.runningTools.collectAsStateWithLifecycle()
+    val pendingApproval by viewModel.pendingApproval.collectAsStateWithLifecycle()
+    val todos by viewModel.todos.collectAsStateWithLifecycle()
+    val queued by viewModel.queued.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val model by viewModel.model.collectAsStateWithLifecycle()
     val effort by viewModel.thinkingEffort.collectAsStateWithLifecycle()
+    val mode by viewModel.mode.collectAsStateWithLifecycle()
 
     var input by remember { mutableStateOf("") }
     var pickerVisible by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    val entryCount = messages.size + if (streaming == null) 0 else 1
-    LaunchedEffect(entryCount, streaming?.content?.length, streaming?.thinking?.length) {
-        if (entryCount > 0) {
-            listState.animateScrollToItem(entryCount - 1)
+    val rowCount = rows.size + runningTools.size + if (streaming == null) 0 else 1
+    LaunchedEffect(rowCount, streaming?.content?.length, streaming?.thinking?.length) {
+        if (rowCount > 0) {
+            listState.animateScrollToItem(rowCount - 1)
         }
     }
 
@@ -107,6 +104,13 @@ fun ChatScreen(
                 style = MaterialTheme.typography.titleMedium,
                 color = ZcodeColors.text,
             )
+            TextButton(onClick = viewModel::cycleMode) {
+                Text(
+                    text = modeLabel(mode),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ZcodeColors.warning,
+                )
+            }
             TextButton(onClick = { pickerVisible = true }) {
                 Text(
                     text = model ?: "Model",
@@ -132,24 +136,44 @@ fun ChatScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(messages, key = { it.id }) { entity ->
-                MessageBubble(entity = entity.toEntry())
+            items(rows, key = { rowKey(it) }) { row ->
+                when (row) {
+                    is ChatRow.MessageRow -> MessageBubble(row.entity)
+                    is ChatRow.ToolRow ->
+                        ToolCard(
+                            name = row.entity.name,
+                            summary = row.entity.summary,
+                            output = row.entity.output,
+                            isError = row.entity.isError,
+                            running = false,
+                        )
+                }
+            }
+            runningTools.forEach { tool ->
+                item(key = tool.callId) {
+                    ToolCard(
+                        name = tool.name,
+                        summary = tool.summary,
+                        output = null,
+                        isError = false,
+                        running = true,
+                    )
+                }
             }
             streaming?.let { state ->
                 if (state.content.isNotEmpty() || state.thinking.isNotEmpty()) {
                     item(key = "streaming") {
-                        MessageBubble(
-                            entry =
-                                ChatEntry(
-                                    id = "streaming",
-                                    isUser = false,
-                                    content = state.content,
-                                    thinking = state.thinking.ifEmpty { null },
-                                ),
+                        AssistantBlock(
+                            thinking = state.thinking.ifEmpty { null },
+                            content = state.content,
                         )
                     }
                 }
             }
+        }
+
+        if (todos.isNotEmpty()) {
+            TodoWidget(todos = todos)
         }
 
         error?.let { message ->
@@ -172,6 +196,40 @@ fun ChatScreen(
                     Text(text = "Dismiss", color = ZcodeColors.muted)
                 }
             }
+        }
+
+        if (queued.isNotEmpty()) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(ZcodeColors.panel)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Queued: ${queued.size}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ZcodeColors.muted,
+                )
+                queued.take(3).forEachIndexed { index, prompt ->
+                    TextButton(onClick = { viewModel.removeFromQueue(index) }) {
+                        Text(
+                            text = prompt.take(24),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = ZcodeColors.text,
+                        )
+                    }
+                }
+            }
+        }
+
+        pendingApproval?.let { approval ->
+            ApprovalPanel(
+                approval = approval,
+                onAnswer = viewModel::approve,
+            )
         }
 
         InputRow(
@@ -197,9 +255,18 @@ fun ChatScreen(
     }
 }
 
+private fun modeLabel(mode: String): String =
+    runCatching { PermissionMode.valueOf(mode.uppercase()) }.getOrDefault(PermissionMode.BUILD).label
+
+private fun rowKey(row: ChatRow): String =
+    when (row) {
+        is ChatRow.MessageRow -> row.entity.id
+        is ChatRow.ToolRow -> row.entity.id
+    }
+
 @Composable
-private fun MessageBubble(entity: ChatEntry) {
-    if (entity.isUser) {
+private fun MessageBubble(entity: MessageEntity) {
+    if (entity.role == "user") {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
@@ -217,23 +284,184 @@ private fun MessageBubble(entity: ChatEntry) {
             }
         }
     } else {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            entity.thinking?.let { thinking ->
-                Text(
-                    text = "Thinking",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = ZcodeColors.muted,
-                )
-                Text(
-                    text = thinking,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ZcodeColors.thinking,
-                )
-            }
+        AssistantBlock(
+            thinking = entity.thinking,
+            content = entity.content,
+        )
+    }
+}
+
+@Composable
+private fun AssistantBlock(
+    thinking: String?,
+    content: String,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        thinking?.let { value ->
+            Text(
+                text = "Thinking",
+                style = MaterialTheme.typography.labelSmall,
+                color = ZcodeColors.muted,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall,
+                color = ZcodeColors.thinking,
+            )
+        }
+        if (content.isNotEmpty()) {
             Markdown(
-                content = entity.content,
+                content = content,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+    }
+}
+
+@Composable
+private fun ToolCard(
+    name: String,
+    summary: String,
+    output: String?,
+    isError: Boolean,
+    running: Boolean,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val borderColor = if (running) ZcodeColors.primary else ZcodeColors.border
+    Surface(
+        color = ZcodeColors.panel,
+        shape = RoundedCornerShape(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(12.dp))
+                .clickable { expanded = !expanded },
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (expanded) "-" else "+",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = ZcodeColors.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = ZcodeColors.text,
+                    )
+                    if (summary.isNotEmpty()) {
+                        Text(
+                            text = summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = ZcodeColors.muted,
+                        )
+                    }
+                }
+                Text(
+                    text =
+                        when {
+                            running -> "running"
+                            isError -> "failed"
+                            else -> "done"
+                        },
+                    style = MaterialTheme.typography.labelSmall,
+                    color =
+                        when {
+                            running -> ZcodeColors.primary
+                            isError -> ZcodeColors.error
+                            else -> ZcodeColors.success
+                        },
+                )
+            }
+            if (expanded && !output.isNullOrEmpty()) {
+                HorizontalDivider(color = ZcodeColors.borderSubtle, modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = output,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = ZcodeColors.text,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodoWidget(todos: List<TodoItem>) {
+    Surface(
+        color = ZcodeColors.panel,
+        shape = RoundedCornerShape(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Todos",
+                style = MaterialTheme.typography.labelMedium,
+                color = ZcodeColors.muted,
+            )
+            todos.forEach { todo ->
+                Text(
+                    text =
+                        when (todo.status) {
+                            "completed" -> "[x] ${todo.content}"
+                            "in_progress" -> "[~] ${todo.content}"
+                            else -> "[ ] ${todo.content}"
+                        },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (todo.status == "completed") ZcodeColors.muted else ZcodeColors.text,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApprovalPanel(
+    approval: PendingApproval,
+    onAnswer: (ApprovalAnswer) -> Unit,
+) {
+    Surface(
+        color = ZcodeColors.panel,
+        shape = RoundedCornerShape(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .border(width = 1.dp, color = ZcodeColors.primary, shape = RoundedCornerShape(12.dp)),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Allow ${approval.name}?",
+                style = MaterialTheme.typography.titleSmall,
+                color = ZcodeColors.text,
+            )
+            Text(
+                text = approval.summary,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = ZcodeColors.muted,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { onAnswer(ApprovalAnswer.ALLOW_ONCE) }) {
+                    Text(text = "Allow", color = ZcodeColors.success)
+                }
+                TextButton(onClick = { onAnswer(ApprovalAnswer.ALLOW_ALWAYS) }) {
+                    Text(text = "Always allow", color = ZcodeColors.success)
+                }
+                TextButton(onClick = { onAnswer(ApprovalAnswer.REJECT_ONCE) }) {
+                    Text(text = "Reject", color = ZcodeColors.error)
+                }
+                TextButton(onClick = { onAnswer(ApprovalAnswer.REJECT_ALWAYS) }) {
+                    Text(text = "Always reject", color = ZcodeColors.error)
+                }
+            }
         }
     }
 }

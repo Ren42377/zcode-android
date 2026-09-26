@@ -47,3 +47,12 @@ interface MessageDao {
     @Query("DELETE FROM messages WHERE sessionId = :sessionId")
     suspend fun clear(sessionId: String)
 }
+
+@Dao
+interface ToolEventDao {
+    @Query("SELECT * FROM tool_events WHERE sessionId = :sessionId ORDER BY createdAt ASC")
+    fun observe(sessionId: String): Flow<List<ToolEventEntity>>
+
+    @Insert
+    suspend fun insert(event: ToolEventEntity)
+}
