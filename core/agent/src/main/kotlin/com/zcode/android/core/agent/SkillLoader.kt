@@ -31,8 +31,7 @@ class SkillLoader
             return roots.flatMap { root -> scan(root) }.distinctBy { it.name }
         }
 
-        fun readBody(skill: Skill): String? =
-            skill.path.takeIf { it.isFile }?.readText(Charsets.UTF_8)
+        fun readBody(skill: Skill): String? = skill.path.takeIf { it.isFile }?.readText(Charsets.UTF_8)
 
         private fun scan(root: File): List<Skill> {
             if (!root.isDirectory) {

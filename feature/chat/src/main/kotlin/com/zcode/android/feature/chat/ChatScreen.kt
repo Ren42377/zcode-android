@@ -248,8 +248,7 @@ fun ChatScreen(
                                     .clickable {
                                         input = "/" + command.name + " "
                                         viewModel.clearSuggestions()
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    }.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
