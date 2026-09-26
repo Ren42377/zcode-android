@@ -1,6 +1,5 @@
 package com.zcode.android.core.terminal
 
-import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -8,6 +7,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 // One interactive shell process attached to a PTY. Writes are queued so keyboard
 // callbacks never block; reads block on Dispatchers.IO until output arrives.

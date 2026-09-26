@@ -11,15 +11,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class TerminalViewModel @Inject constructor(
-    private val sessionManager: TerminalSessionManager,
-) : ViewModel() {
-    private val _terminal = MutableStateFlow<TerminalSessionManager.ActiveTerminal?>(null)
-    val terminal: StateFlow<TerminalSessionManager.ActiveTerminal?> = _terminal.asStateFlow()
+class TerminalViewModel
+    @Inject
+    constructor(
+        private val sessionManager: TerminalSessionManager,
+    ) : ViewModel() {
+        private val _terminal = MutableStateFlow<TerminalSessionManager.ActiveTerminal?>(null)
+        val terminal: StateFlow<TerminalSessionManager.ActiveTerminal?> = _terminal.asStateFlow()
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            _terminal.value = sessionManager.acquire()
+        init {
+            viewModelScope.launch(Dispatchers.IO) {
+                _terminal.value = sessionManager.acquire()
+            }
         }
     }
-}
