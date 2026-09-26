@@ -13,7 +13,6 @@ import com.zcode.android.core.agent.HookRunner
 import com.zcode.android.core.agent.MemoryStore
 import com.zcode.android.core.agent.PermissionMode
 import com.zcode.android.core.agent.SkillLoader
-import com.zcode.android.core.mcp.McpRegistry
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.LlmClient
 import com.zcode.android.core.engine.LlmEndpoint
@@ -25,6 +24,7 @@ import com.zcode.android.core.engine.LlmRole
 import com.zcode.android.core.engine.LlmUsage
 import com.zcode.android.core.engine.ProviderPresets
 import com.zcode.android.core.engine.ThinkingEffort
+import com.zcode.android.core.mcp.McpRegistry
 import com.zcode.android.core.storage.ApiKeyVault
 import com.zcode.android.core.storage.MessageDao
 import com.zcode.android.core.storage.MessageEntity

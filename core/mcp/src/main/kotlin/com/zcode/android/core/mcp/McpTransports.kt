@@ -1,8 +1,5 @@
 package com.zcode.android.core.mcp
 
-import java.io.IOException
-import java.io.OutputStream
-import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,6 +13,9 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
+import java.io.OutputStream
+import java.util.concurrent.atomic.AtomicLong
 
 // Result of one JSON-RPC round trip: the result object when the call succeeded.
 data class JsonRpcOutcome(
@@ -28,7 +28,10 @@ data class JsonRpcOutcome(
 interface McpTransport {
     suspend fun connect()
 
-    suspend fun request(method: String, params: JsonObject?): JsonRpcOutcome
+    suspend fun request(
+        method: String,
+        params: JsonObject?,
+    ): JsonRpcOutcome
 
     fun close()
 }
@@ -42,7 +45,10 @@ internal val json = Json { ignoreUnknownKeys = true }
 internal class JsonRpcWriter {
     private val counter = AtomicLong(1)
 
-    fun envelope(method: String, params: JsonObject?): JsonObject =
+    fun envelope(
+        method: String,
+        params: JsonObject?,
+    ): JsonObject =
         buildJsonObject {
             put("jsonrpc", "2.0")
             put("id", counter.getAndIncrement())
@@ -272,7 +278,12 @@ class SseMcpTransport(
         val target = endpointUrl ?: return
         Thread {
             try {
-                val builder = Request.Builder().url(target).header("Accept", "text/event-stream").get()
+                val builder =
+                    Request
+                        .Builder()
+                        .url(target)
+                        .header("Accept", "text/event-stream")
+                        .get()
                 headers.forEach { (name, value) -> builder.header(name, value) }
                 httpClient.newCall(builder.build()).execute().use { response ->
                     val source = response.body.source()

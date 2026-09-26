@@ -6,15 +6,12 @@ import com.zcode.android.core.tools.ExternalToolProvider
 import com.zcode.android.core.tools.Tool
 import com.zcode.android.core.tools.ToolContext
 import com.zcode.android.core.tools.ToolOutcome
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,6 +24,9 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
+import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
 // Adapts one MCP tool to the agent tool interface. Arguments arrive as a JSON
 // object from the model and are forwarded to the server unchanged.
@@ -119,17 +119,24 @@ class McpRegistry
             try {
                 val transport =
                     when (config.transport) {
-                        "stdio" ->
+                        "stdio" -> {
                             StdioMcpTransport(
                                 command = listOfNotNull(config.command, *config.args.toTypedArray()).joinToString(separator = " "),
                                 workingDirectory = null,
                             )
+                        }
 
-                        "http" -> HttpMcpTransport(url = config.url.orEmpty(), headers = config.headers, httpClient = httpClient)
+                        "http" -> {
+                            HttpMcpTransport(url = config.url.orEmpty(), headers = config.headers, httpClient = httpClient)
+                        }
 
-                        "sse" -> SseMcpTransport(url = config.url.orEmpty(), headers = config.headers, httpClient = httpClient)
+                        "sse" -> {
+                            SseMcpTransport(url = config.url.orEmpty(), headers = config.headers, httpClient = httpClient)
+                        }
 
-                        else -> throw IOException("unsupported transport: " + config.transport)
+                        else -> {
+                            throw IOException("unsupported transport: " + config.transport)
+                        }
                     }
                 transport.connect()
                 transport.request("notifications/initialized", null)
@@ -146,10 +153,11 @@ class McpRegistry
             transport: McpTransport,
         ) {
             val outcome = transport.request("tools/list", null)
-            val result = outcome.result ?: run {
-                errors[name] = outcome.error ?: "tools/list failed"
-                return
-            }
+            val result =
+                outcome.result ?: run {
+                    errors[name] = outcome.error ?: "tools/list failed"
+                    return
+                }
             val tools =
                 (result["tools"] as? kotlinx.serialization.json.JsonArray)
                     ?.mapNotNull { element ->
@@ -213,7 +221,6 @@ class McpRegistry
             return McpCallResult(text = text.ifEmpty { "(empty result)" }, isError = isError)
         }
 
-
         private fun parseServers(file: File): Map<String, McpServerConfig> {
             if (!file.isFile) {
                 return emptyMap()
@@ -223,25 +230,29 @@ class McpRegistry
                     ?: return emptyMap()
             val section = (root["mcp.servers"] as? JsonObject) ?: (root["mcpServers"] as? JsonObject) ?: (root["servers"] as? JsonObject)
             section ?: return emptyMap()
-            return section.entries.mapNotNull { (name, value) ->
-                val server = value as? JsonObject ?: return@mapNotNull null
-                McpServerConfig(
-                    name = name,
-                    transport = (server["transport"] as? JsonPrimitive)?.contentOrNull
-                        ?: if (server["command"] != null) "stdio" else "http",
-                    command = (server["command"] as? JsonPrimitive)?.contentOrNull,
-                    args =
-                        (server["args"] as? kotlinx.serialization.json.JsonArray)
-                            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
-                            .orEmpty(),
-                    url = (server["url"] as? JsonPrimitive)?.contentOrNull,
-                    headers =
-                        (server["headers"] as? JsonObject)?.entries?.associate { (key, header) ->
-                            key to ((header as? JsonPrimitive)?.contentOrNull ?: "")
-                        }.orEmpty(),
-                    enabled = (server["enabled"] as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: true,
-                )
-            }.associateBy { it.name }
+            return section.entries
+                .mapNotNull { (name, value) ->
+                    val server = value as? JsonObject ?: return@mapNotNull null
+                    McpServerConfig(
+                        name = name,
+                        transport =
+                            (server["transport"] as? JsonPrimitive)?.contentOrNull
+                                ?: if (server["command"] != null) "stdio" else "http",
+                        command = (server["command"] as? JsonPrimitive)?.contentOrNull,
+                        args =
+                            (server["args"] as? kotlinx.serialization.json.JsonArray)
+                                ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+                                .orEmpty(),
+                        url = (server["url"] as? JsonPrimitive)?.contentOrNull,
+                        headers =
+                            (server["headers"] as? JsonObject)
+                                ?.entries
+                                ?.associate { (key, header) ->
+                                    key to ((header as? JsonPrimitive)?.contentOrNull ?: "")
+                                }.orEmpty(),
+                        enabled = (server["enabled"] as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: true,
+                    )
+                }.associateBy { it.name }
         }
     }
 
