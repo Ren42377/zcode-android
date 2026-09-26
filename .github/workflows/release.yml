@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish the signed release
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify signing secrets
+        run: |
+          missing=0
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing repository secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: 9.8.0
+
+      - name: Generate the Gradle wrapper if missing
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 9.8.0
+          fi
+
+      - name: Decode the signing keystore
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore.p12"
+
+      - name: Build the signed release APKs
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/keystore.p12
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          ./gradlew assembleRelease "-Papp.versionName=$version"
+
+      - name: Rename the APKs
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mv app/build/outputs/apk/release/app-arm64-v8a-release.apk "zcode-android-v${version}-arm64.apk"
+          mv app/build/outputs/apk/release/app-universal-release.apk "zcode-android-v${version}-universal.apk"
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          previous_tag="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [ -n "$previous_tag" ]; then
+            notes="$(git log --pretty=format:"- %s" "${previous_tag}..${GITHUB_REF_NAME}")"
+          else
+            notes="$(git log --pretty=format:"- %s" "${GITHUB_REF_NAME}")"
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "ZCode for Android ${version}" \
+            --notes "$notes" \
+            "zcode-android-v${version}-arm64.apk" \
+            "zcode-android-v${version}-universal.apk"
+
+      - name: Remove the decoded keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/keystore.p12"
