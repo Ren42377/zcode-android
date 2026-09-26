@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -36,7 +37,7 @@ class LlmClient(
         endpoint: LlmEndpoint,
         onEvent: (LlmEvent) -> Unit,
         onCallStarted: (Call) -> Unit = {},
-    ): LlmUsage? =
+    ): StreamOutcome =
         withContext(Dispatchers.IO) {
             val httpCall =
                 client.newCall(
@@ -59,21 +60,29 @@ class LlmClient(
                 }
                 val source = response.body.source()
                 var usage: LlmUsage? = null
+                val toolCallBuilders = mutableMapOf<Int, ToolCallBuilder>()
                 while (true) {
                     val line = source.readUtf8Line() ?: break
                     if (Sse.isDone(line)) {
                         break
                     }
                     val payload = Sse.dataPayload(line) ?: continue
-                    val (events, chunkUsage) =
+                    val chunk =
                         when (endpoint.protocol) {
                             LlmProtocol.OPENAI -> OpenAiChunkParser.parse(payload)
                             LlmProtocol.ANTHROPIC -> AnthropicEventParser.parse(payload)
                         }
-                    events.forEach(onEvent)
-                    usage = combineUsage(usage, chunkUsage, endpoint.protocol)
+                    chunk.events.forEach(onEvent)
+                    for (fragment in chunk.toolCallFragments) {
+                        toolCallBuilders.getOrPut(fragment.index) { ToolCallBuilder() }.apply(fragment)
+                    }
+                    usage = combineUsage(usage, chunk.usage, endpoint.protocol)
                 }
-                usage
+                StreamOutcome(
+                    usage = usage,
+                    toolCalls =
+                        toolCallBuilders.toSortedMap().values.map { it.build() },
+                )
             }
         }
 
@@ -106,11 +115,35 @@ class LlmClient(
         }
     }
 
+    private class ToolCallBuilder {
+        private var id: String = ""
+        private var name: String = ""
+        private val arguments = StringBuilder()
+
+        fun apply(fragment: ToolCallFragment) {
+            fragment.id?.let { id = it }
+            fragment.name?.let { name = it }
+            fragment.argumentsFragment?.let { arguments.append(it) }
+        }
+
+        fun build(): ToolCallRequest =
+            ToolCallRequest(
+                id = id,
+                name = name,
+                argumentsJson = arguments.toString(),
+            )
+    }
+
     private fun endpointUrl(endpoint: LlmEndpoint): String =
         endpoint.baseUrl.trimEnd('/') +
             when (endpoint.protocol) {
-                LlmProtocol.OPENAI -> "/chat/completions"
-                LlmProtocol.ANTHROPIC -> "/v1/messages"
+                LlmProtocol.OPENAI -> {
+                    "/chat/completions"
+                }
+
+                LlmProtocol.ANTHROPIC -> {
+                    "/v1/messages"
+                }
             }
 
     private fun LlmEndpoint.headers() =
@@ -147,19 +180,67 @@ class LlmClient(
                 "messages",
                 buildJsonArray {
                     request.messages.forEach { message ->
-                        add(
-                            buildJsonObject {
-                                put("role", message.role.name.lowercase())
-                                put("content", message.content)
-                            },
-                        )
+                        add(message.openAiMessage())
                     }
                 },
             )
+            if (request.tools.isNotEmpty()) {
+                put(
+                    "tools",
+                    buildJsonArray {
+                        request.tools.forEach { tool ->
+                            add(
+                                buildJsonObject {
+                                    put("type", "function")
+                                    put(
+                                        "function",
+                                        buildJsonObject {
+                                            put("name", tool.name)
+                                            put("description", tool.description)
+                                            put("parameters", tool.parameters)
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    },
+                )
+            }
             request.maxOutputTokens?.let { put("max_tokens", it) }
             // Reasoning effort is passed through verbatim; provider support for the
             // max level varies, and a rejected value surfaces as a stream error.
             request.thinkingEffort?.let { put("reasoning_effort", it.name.lowercase()) }
+        }
+
+    private fun LlmMessage.openAiMessage(): JsonObject =
+        buildJsonObject {
+            put("role", role.name.lowercase())
+            if (content.isNotEmpty()) {
+                put("content", content)
+            }
+            if (toolCalls.isNotEmpty()) {
+                put(
+                    "tool_calls",
+                    buildJsonArray {
+                        toolCalls.forEach { call ->
+                            add(
+                                buildJsonObject {
+                                    put("id", call.id)
+                                    put("type", "function")
+                                    put(
+                                        "function",
+                                        buildJsonObject {
+                                            put("name", call.name)
+                                            put("arguments", call.argumentsJson)
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    },
+                )
+            }
+            toolCallId?.let { put("tool_call_id", it) }
         }
 
     private fun anthropicBody(request: LlmRequest) =
@@ -181,15 +262,26 @@ class LlmClient(
                     request.messages
                         .filter { it.role != LlmRole.SYSTEM }
                         .forEach { message ->
-                            add(
-                                buildJsonObject {
-                                    put("role", message.role.wireRole())
-                                    put("content", message.content)
-                                },
-                            )
+                            add(message.anthropicMessage())
                         }
                 },
             )
+            if (request.tools.isNotEmpty()) {
+                put(
+                    "tools",
+                    buildJsonArray {
+                        request.tools.forEach { tool ->
+                            add(
+                                buildJsonObject {
+                                    put("name", tool.name)
+                                    put("description", tool.description)
+                                    put("input_schema", tool.parameters)
+                                },
+                            )
+                        }
+                    },
+                )
+            }
             if (budget != null) {
                 put(
                     "thinking",
@@ -201,11 +293,63 @@ class LlmClient(
             }
         }
 
+    private fun LlmMessage.anthropicMessage(): JsonObject =
+        buildJsonObject {
+            put("role", role.wireRole())
+            when {
+                toolCalls.isNotEmpty() -> {
+                    put(
+                        "content",
+                        buildJsonArray {
+                            if (content.isNotEmpty()) {
+                                add(
+                                    buildJsonObject {
+                                        put("type", "text")
+                                        put("text", content)
+                                    },
+                                )
+                            }
+                            toolCalls.forEach { call ->
+                                add(
+                                    buildJsonObject {
+                                        put("type", "tool_use")
+                                        put("id", call.id)
+                                        put("name", call.name)
+                                        put("input", json.parseToJsonElement(call.argumentsJson.ifEmpty { "{}" }))
+                                    },
+                                )
+                            }
+                        },
+                    )
+                }
+
+                role == LlmRole.TOOL -> {
+                    put(
+                        "content",
+                        buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("type", "tool_result")
+                                    put("tool_use_id", toolCallId.orEmpty())
+                                    put("content", content)
+                                },
+                            )
+                        },
+                    )
+                }
+
+                else -> {
+                    put("content", content)
+                }
+            }
+        }
+
     private fun LlmRole.wireRole(): String =
         when (this) {
             LlmRole.USER -> "user"
             LlmRole.ASSISTANT -> "assistant"
             LlmRole.SYSTEM -> "system"
+            LlmRole.TOOL -> "user"
         }
 
     // Anthropic reports input usage in message_start and output usage in

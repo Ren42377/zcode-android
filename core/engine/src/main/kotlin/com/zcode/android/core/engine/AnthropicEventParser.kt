@@ -5,25 +5,38 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
-// Parses Anthropic Messages SSE events into protocol agnostic events. Relevant
-// event types: message_start (input usage), content_block_delta with text_delta
-// or thinking_delta, message_delta (output usage), message_stop.
+// Parses Anthropic Messages SSE events. Tool calls arrive as content_block_start
+// with a tool_use block followed by input_json_delta fragments.
 
 object AnthropicEventParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Returns the events carried by one SSE payload plus the usage when present.
-    fun parse(payload: String): Pair<List<LlmEvent>, LlmUsage?> {
-        val root = json.parseToJsonElement(payload) as? JsonObject ?: return Pair(emptyList(), null)
+    fun parse(payload: String): ParsedChunk {
+        val root =
+            json.parseToJsonElement(payload) as? JsonObject
+                ?: return ParsedChunk(events = emptyList(), usage = null, toolCallFragments = emptyList())
         val type = (root["type"] as? JsonPrimitive)?.contentOrNull
         val events = mutableListOf<LlmEvent>()
+        val fragments = mutableListOf<ToolCallFragment>()
         var usage: LlmUsage? = null
         when (type) {
             "message_start" -> {
                 usage = parseMessageStart(root)
             }
 
+            "content_block_start" -> {
+                val index = (root["index"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
+                val block = root["content_block"] as? JsonObject
+                if ((block?.get("type") as? JsonPrimitive)?.contentOrNull == "tool_use") {
+                    val id = (block["id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                    val name = (block["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                    fragments.add(ToolCallFragment(index = index, id = id, name = name, argumentsFragment = null))
+                    events.add(LlmEvent.ToolCallStart(index = index, id = id, name = name))
+                }
+            }
+
             "content_block_delta" -> {
+                val index = (root["index"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
                 val delta = root["delta"] as? JsonObject
                 when ((delta?.get("type") as? JsonPrimitive)?.contentOrNull) {
                     "text_delta" -> {
@@ -39,6 +52,14 @@ object AnthropicEventParser {
                             events.add(LlmEvent.ThinkingDelta(thinking))
                         }
                     }
+
+                    "input_json_delta" -> {
+                        val fragment = (delta?.get("partial_json") as? JsonPrimitive)?.contentOrNull
+                        if (!fragment.isNullOrEmpty()) {
+                            fragments.add(ToolCallFragment(index = index, id = null, name = null, argumentsFragment = fragment))
+                            events.add(LlmEvent.ToolCallArguments(index = index, fragment = fragment))
+                        }
+                    }
                 }
             }
 
@@ -49,7 +70,7 @@ object AnthropicEventParser {
                 }
             }
         }
-        return Pair(events, usage)
+        return ParsedChunk(events = events, usage = usage, toolCallFragments = fragments)
     }
 
     private fun parseMessageStart(root: JsonObject): LlmUsage? {

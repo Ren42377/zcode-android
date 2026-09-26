@@ -12,6 +12,7 @@ enum class LlmRole {
     SYSTEM,
     USER,
     ASSISTANT,
+    TOOL,
 }
 
 enum class ThinkingEffort {
@@ -20,11 +21,31 @@ enum class ThinkingEffort {
     MAX,
 }
 
+// One tool invocation requested by the model. argumentsJson holds the raw JSON
+// object text produced by the model.
+data class ToolCallRequest(
+    val id: String,
+    val name: String,
+    val argumentsJson: String,
+)
+
+// Static definition of a tool exposed to the model. parameters carries the JSON
+// schema object for the tool input.
+data class ToolSpec(
+    val name: String,
+    val description: String,
+    val parameters: kotlinx.serialization.json.JsonObject,
+)
+
 data class LlmMessage(
     val role: LlmRole,
     val content: String,
     // Assistant turns keep their thinking content so context rebuilds faithfully.
     val thinking: String? = null,
+    // Assistant turns carry the requested tool calls; TOOL turns carry the id of
+    // the call this message answers.
+    val toolCalls: List<ToolCallRequest> = emptyList(),
+    val toolCallId: String? = null,
 )
 
 data class LlmRequest(
@@ -32,6 +53,7 @@ data class LlmRequest(
     val messages: List<LlmMessage>,
     val maxOutputTokens: Int? = null,
     val thinkingEffort: ThinkingEffort? = null,
+    val tools: List<ToolSpec> = emptyList(),
 )
 
 sealed interface LlmEvent {
@@ -42,11 +64,28 @@ sealed interface LlmEvent {
     data class ThinkingDelta(
         val text: String,
     ) : LlmEvent
+
+    data class ToolCallStart(
+        val index: Int,
+        val id: String,
+        val name: String,
+    ) : LlmEvent
+
+    data class ToolCallArguments(
+        val index: Int,
+        val fragment: String,
+    ) : LlmEvent
 }
 
 data class LlmUsage(
     val inputTokens: Int,
     val outputTokens: Int,
+)
+
+// Final state of one streamed completion.
+data class StreamOutcome(
+    val usage: LlmUsage?,
+    val toolCalls: List<ToolCallRequest>,
 )
 
 data class ProviderPreset(

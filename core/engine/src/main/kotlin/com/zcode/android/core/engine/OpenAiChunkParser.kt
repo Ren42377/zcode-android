@@ -5,19 +5,20 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
 
-// Parses OpenAI chat completion chunks into protocol agnostic events. GLM models
-// expose their thinking as reasoning_content on the delta, and the final chunk
-// (with stream_options.include_usage) carries the usage totals.
+// Parses OpenAI chat completion chunks. GLM models expose their thinking as
+// reasoning_content on the delta, and the final chunk (with
+// stream_options.include_usage) carries the usage totals.
 
 object OpenAiChunkParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Returns the events carried by one SSE payload plus the usage when present.
-    fun parse(payload: String): Pair<List<LlmEvent>, LlmUsage?> {
-        val root = json.parseToJsonElement(payload) as? JsonObject ?: return Pair(emptyList(), null)
+    fun parse(payload: String): ParsedChunk {
+        val root =
+            json.parseToJsonElement(payload) as? JsonObject
+                ?: return ParsedChunk(events = emptyList(), usage = null, toolCallFragments = emptyList())
         val events = mutableListOf<LlmEvent>()
+        val fragments = mutableListOf<ToolCallFragment>()
         val choices = root["choices"] as? JsonArray ?: JsonArray(emptyList())
         for (choice in choices) {
             val delta = (choice as? JsonObject)?.get("delta") as? JsonObject ?: continue
@@ -28,6 +29,32 @@ object OpenAiChunkParser {
             val text = (delta["content"] as? JsonPrimitive)?.contentOrNull
             if (!text.isNullOrEmpty()) {
                 events.add(LlmEvent.TextDelta(text))
+            }
+            val toolCalls = delta["tool_calls"] as? JsonArray ?: continue
+            for (call in toolCalls) {
+                val callObject = call as? JsonObject ?: continue
+                val index = (callObject["index"] as? JsonPrimitive)?.content?.toIntOrNull() ?: 0
+                val id = (callObject["id"] as? JsonPrimitive)?.contentOrNull
+                val function = callObject["function"] as? JsonObject
+                val name = (function?.get("name") as? JsonPrimitive)?.contentOrNull
+                val arguments = (function?.get("arguments") as? JsonPrimitive)?.contentOrNull
+                fragments.add(
+                    ToolCallFragment(
+                        index = index,
+                        id = id,
+                        name = name,
+                        argumentsFragment = arguments,
+                    ),
+                )
+                if (!name.isNullOrEmpty()) {
+                    events.add(
+                        LlmEvent.ToolCallStart(
+                            index = index,
+                            id = id.orEmpty(),
+                            name = name,
+                        ),
+                    )
+                }
             }
         }
         val usage =
@@ -40,6 +67,6 @@ object OpenAiChunkParser {
                     LlmUsage(inputTokens = prompt ?: 0, outputTokens = completion ?: 0)
                 }
             }
-        return Pair(events, usage)
+        return ParsedChunk(events = events, usage = usage, toolCallFragments = fragments)
     }
 }
