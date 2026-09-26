@@ -156,9 +156,9 @@ class ReadToolTest : ToolTestBase() {
                 },
             )
         val lines = outcome.outputForModel.lines()
-        assertEquals(3, lines.size)
+        assertEquals(4, lines.size)
         assertTrue(lines[0].trimStart().startsWith("10\tline 10"))
-        assertTrue(outcome.outputForModel.contains("omitted"))
+        assertTrue(lines[3].startsWith("[lines 13..15 omitted"))
     }
 }
 
