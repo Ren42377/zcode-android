@@ -51,3 +51,10 @@ else()
         vterm
     )
 endif()
+
+# ZCode addition (see VENDORED.md): PTY implementation owned by this project.
+add_library(zcodepty SHARED pty.c)
+
+if(ANDROID)
+    target_link_options(zcodepty PRIVATE "-Wl,-z,max-page-size=16384")
+endif()
