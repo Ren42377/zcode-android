@@ -109,7 +109,7 @@ class ShellSession internal constructor(
         // Starts a one-shot shell command; the caller reads the combined output.
         fun startNonInteractive(
             command: String,
-            workingDirectory: String,
+            workingDirectory: String?,
             environment: Array<String>,
         ): ShellSession {
             val result =
