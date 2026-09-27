@@ -18,15 +18,15 @@ The agent engine is written natively in Kotlin rather than running the original 
 | --- | --- |
 | `:app` | Application entry point, navigation, dependency graph |
 | `:core:designsystem` | Color tokens, typography, shared UI components |
-| `:core:agent` | Agent loop, tool orchestration, compaction, permission modes (planned, milestone M2 and later) |
-| `:core:engine` | LLM clients: OpenAI compatible and Anthropic compatible, SSE streaming (planned, M2) |
-| `:core:tools` | Tool implementations: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, WebFetch, WebSearch, Task, AskUserQuestion (planned, M3) |
-| `:core:terminal` | PTY via JNI, shell sessions, exec service, Termux bridge, vendored termlib renderer (planned, M1) |
-| `:core:mcp` | MCP client for stdio, HTTP, and SSE transports (planned, M4) |
-| `:core:storage` | Room database for sessions, messages, and usage; DataStore preferences; encrypted key storage (planned, M2) |
+| `:core:agent` | Agent loop, tool orchestration, permission modes, hooks, memory, skills, and subagent runners |
+| `:core:engine` | LLM clients: OpenAI compatible and Anthropic compatible with SSE streaming and tool calling |
+| `:core:tools` | Tool implementations: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, WebFetch, WebSearch, plus the external tool provider contract |
+| `:core:terminal` | PTY via JNI, shell sessions, exec service, vendored termlib renderer; Termux bridge planned for M5 |
+| `:core:mcp` | MCP client for stdio, HTTP, and SSE transports with the mcp__server__tool registry |
+| `:core:storage` | Room database for sessions, messages, and tool events; DataStore preferences; encrypted key storage |
 | `:core:config` | ZCode compatible config files, skills, commands, and plugin loaders (planned, M4) |
-| `:feature:chat` | Chat screen and transcript components (planned, M2 and later) |
-| `:feature:terminal` | Terminal screen (planned, M1) |
+| `:feature:chat` | Chat screen with transcript, tool cards, approval panel, todo widget, and message queue |
+| `:feature:terminal` | Terminal screen with helper keys |
 | `:feature:workspace` | File explorer and workspace picker (planned, M5) |
 | `:feature:settings` | Settings screens (planned, M5) |
 

@@ -59,7 +59,7 @@ This page tracks the feature parity matrix with ZCode and the release milestones
 | M1 | Terminal: PTY via JNI, shell sessions, Terminal screen on the stock shell, streaming output, resize, NDK build on CI | Done |
 | M2 | Chat core: LLM client with streaming, session storage, chat screen with the ZCode theme, API key onboarding, model picker | Done |
 | M3 | Tools and permissions: full v1 tool set, permission modes with approval UI, todo widget, compaction, message queue | In progress (tools, agent loop, approvals, queue, and todo widget are implemented; compaction and remaining polish pending) |
-| M4 | Extensibility: slash and custom commands, skills, plugins and marketplace, hooks, MCP, subagents, memory | Not started |
+| M4 | Extensibility: slash and custom commands, skills, plugins and marketplace, hooks, MCP, subagents, memory | In progress (built-in slash commands with compact, goal, and init, skills, project memory, hooks for all 7 events, MCP over stdio, HTTP, and SSE, and the Task subagent tool are implemented; custom command files, plugins, and the marketplace remain) |
 | M5 | Integration and polish: full Termux bridge, file explorer, usage view, in-app updates, simple /goal, cross-device QA, signed v1.0.0 release | Not started |
 
 Each milestone closes with green CI, the pre-push checklist from AGENTS.md passed, the related documentation updated, and an APK attached to a prerelease.
