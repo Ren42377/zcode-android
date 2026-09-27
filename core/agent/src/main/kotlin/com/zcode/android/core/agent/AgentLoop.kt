@@ -117,7 +117,7 @@ class AgentLoop
                 }
                 messages += LlmMessage(role = LlmRole.ASSISTANT, content = lastText, toolCalls = outcome.toolCalls)
                 for (call in outcome.toolCalls) {
-                    executeToolCall(call, mode, context, messages, onEvent)
+                    executeToolCall(call, mode, context, messages, onEvent, hooks)
                 }
             }
             return TurnResult(
@@ -133,6 +133,7 @@ class AgentLoop
             context: ToolContext,
             messages: MutableList<LlmMessage>,
             onEvent: (AgentEvent) -> Unit,
+            hooks: HookConfig?,
         ) {
             val tool = registry.byName(call.name)
             if (tool == null) {
