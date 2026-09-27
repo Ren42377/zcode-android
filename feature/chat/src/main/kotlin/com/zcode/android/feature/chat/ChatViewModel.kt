@@ -8,6 +8,8 @@ import com.zcode.android.core.agent.AgentEvent
 import com.zcode.android.core.agent.AgentLoop
 import com.zcode.android.core.agent.ApprovalAnswer
 import com.zcode.android.core.agent.ApprovalCoordinator
+import com.zcode.android.core.agent.CommandLoader
+import com.zcode.android.core.agent.CustomCommand
 import com.zcode.android.core.agent.HookConfig
 import com.zcode.android.core.agent.HookRunner
 import com.zcode.android.core.agent.MemoryStore
@@ -114,6 +116,7 @@ class ChatViewModel
         private val skillLoader: SkillLoader,
         private val hookRunner: HookRunner,
         private val mcpRegistry: McpRegistry,
+        private val commandLoader: CommandLoader,
         private val exec: ExecService,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
@@ -172,6 +175,14 @@ class ChatViewModel
         @Volatile
         private var stopped = false
 
+        @Volatile
+        private var commandModelOverride: String? = null
+
+        @Volatile
+        private var commandToolFilter: Set<String>? = null
+
+        private val customCommands: Map<String, CustomCommand> = commandLoader.load(null)
+
         private val httpClient = OkHttpClient()
 
         init {
@@ -217,7 +228,13 @@ class ChatViewModel
         fun onInputChanged(value: String) {
             _suggestions.value =
                 if (value.startsWith("/")) {
-                    SlashCommands.matching(value.removePrefix("/").trim())
+                    val prefix = value.removePrefix("/").trim()
+                    val builtin = SlashCommands.matching(prefix)
+                    val custom =
+                        customCommands.values
+                            .filter { prefix.isEmpty() || it.name.startsWith(prefix) }
+                            .map { SlashCommand(it.name, it.description) }
+                    builtin + custom
                 } else {
                     emptyList()
                 }
@@ -272,7 +289,14 @@ class ChatViewModel
                 "memory" -> {
                     showMemory()
                 }
-            }
+            
+                else -> {
+                    val command = customCommands[name]
+                    if (command != null) {
+                        runCustomCommand(command, args)
+                    }
+                }
+}
         }
 
         fun pickerShown() {
@@ -465,6 +489,7 @@ class ChatViewModel
                                 mode = currentMode(),
                                 context = toolContext,
                                 hooks = hookConfig,
+                                toolFilter = commandToolFilter,
                                 onEvent = { event ->
                                     handleEvent(event, text, thinking)
                                 },
@@ -485,6 +510,8 @@ class ChatViewModel
                         _pendingApproval.value = null
                         _runningTools.value = emptyList()
                         activeCall = null
+                        commandModelOverride = null
+                        commandToolFilter = null
                         val next = _queued.value.firstOrNull()
                         if (next != null) {
                             _queued.value = _queued.value.drop(1)
@@ -604,7 +631,25 @@ class ChatViewModel
 
         private fun workspace(): File = File(appContext.filesDir, "workspace").apply { mkdirs() }
 
-        private suspend fun currentModel(): String = preferences.model.first() ?: BuiltinModels.glm53.id
+        // Substitutes the positional arguments into the command template, then runs
+        // it as a normal turn with the command model and tool restrictions.
+        private fun runCustomCommand(
+            command: CustomCommand,
+            args: String,
+        ) {
+            val positional = args.split(' ').filter { it.isNotEmpty() }
+            val prompt =
+                command.template
+                    .replace("$ARGUMENTS", args)
+                    .replace("$1", positional.getOrElse(0) { "" })
+                    .replace("$2", positional.getOrElse(1) { "" })
+            commandModelOverride = command.model
+            commandToolFilter = command.allowedTools
+            send(prompt)
+        }
+
+        private suspend fun currentModel(): String =
+            commandModelOverride ?: preferences.model.first() ?: BuiltinModels.glm53.id
 
         private suspend fun currentEffort(): ThinkingEffort? =
             preferences.thinkingEffort.first()?.let { effort ->
