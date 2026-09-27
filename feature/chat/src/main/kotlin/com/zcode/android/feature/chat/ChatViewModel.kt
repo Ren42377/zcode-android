@@ -113,6 +113,7 @@ class ChatViewModel
         private val skillLoader: SkillLoader,
         private val hookRunner: HookRunner,
         private val mcpRegistry: McpRegistry,
+        private val exec: ExecService,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
 
@@ -170,7 +171,6 @@ class ChatViewModel
         @Volatile
         private var stopped = false
 
-        private val exec = ExecService()
         private val httpClient = OkHttpClient()
 
         init {

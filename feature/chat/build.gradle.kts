@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":core:agent"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:engine"))
+    implementation(project(":core:mcp"))
     implementation(project(":core:tools"))
     implementation(project(":core:storage"))
 
