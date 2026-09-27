@@ -278,6 +278,10 @@ class ChatViewModel
             _pickerOpen.value = false
         }
 
+        fun openPicker() {
+            _pickerOpen.value = true
+        }
+
         private fun cycleEffort() {
             viewModelScope.launch {
                 val order = listOf<String?>(null, "LOW", "HIGH", "MAX")

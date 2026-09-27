@@ -112,7 +112,7 @@ fun ChatScreen(
                     color = ZcodeColors.warning,
                 )
             }
-            TextButton(onClick = { pickerVisible = true }) {
+            TextButton(onClick = viewModel::openPicker) {
                 Text(
                     text = model ?: "Model",
                     style = MaterialTheme.typography.labelMedium,
