@@ -591,6 +591,9 @@ class ChatViewModel
                 httpClient = httpClient,
                 webSearchBaseUrl = webSearchBase,
                 webSearchApiKey = endpoint.apiKey,
+                endpoint = endpoint,
+                model = currentModel(),
+                thinkingEffort = currentEffort(),
             )
         }
 

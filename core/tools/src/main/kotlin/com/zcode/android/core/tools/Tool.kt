@@ -26,6 +26,10 @@ class ToolContext(
     // Web search uses the provider endpoint; null disables the tool.
     val webSearchBaseUrl: String?,
     val webSearchApiKey: String?,
+    // Active LLM settings so orchestration tools can run their own requests.
+    val endpoint: com.zcode.android.core.engine.LlmEndpoint,
+    val model: String,
+    val thinkingEffort: com.zcode.android.core.engine.ThinkingEffort?,
 )
 
 interface Tool {
