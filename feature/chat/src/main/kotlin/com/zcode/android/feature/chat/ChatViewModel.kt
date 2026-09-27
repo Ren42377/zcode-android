@@ -454,7 +454,7 @@ class ChatViewModel
                     _streaming.value = StreamingState(thinking = "", content = "")
                     _busy.value = true
                     try {
-                        val usage =
+                        val turnResult =
                             agentLoop.run(
                                 history = buildLlmHistory(messageDao.list(sessionKey.value)),
                                 instructions = buildInstructions(),
@@ -470,7 +470,7 @@ class ChatViewModel
                                 },
                                 onCallStarted = { activeCall = it },
                             )
-                        insertAssistant(text.toString(), thinking.toString().ifEmpty { null }, usage)
+                        insertAssistant(text.toString(), thinking.toString().ifEmpty { null }, turnResult.usage)
                     } catch (_: IOException) {
                         // A cancelled call surfaces as IOException; keep partial output.
                         if (text.isNotEmpty()) {
