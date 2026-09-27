@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zcode.android.core.designsystem.ZcodeColors
+import com.zcode.android.core.designsystem.ZcodeTheme
 import com.zcode.android.feature.chat.ChatScreen
 import com.zcode.android.feature.chat.OnboardingScreen
 import com.zcode.android.feature.terminal.TerminalScreen
