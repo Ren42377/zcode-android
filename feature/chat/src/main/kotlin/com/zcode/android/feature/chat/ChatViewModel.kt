@@ -289,14 +289,14 @@ class ChatViewModel
                 "memory" -> {
                     showMemory()
                 }
-            
+
                 else -> {
                     val command = customCommands[name]
                     if (command != null) {
                         runCustomCommand(command, args)
                     }
                 }
-}
+            }
         }
 
         fun pickerShown() {
@@ -648,8 +648,7 @@ class ChatViewModel
             send(prompt)
         }
 
-        private suspend fun currentModel(): String =
-            commandModelOverride ?: preferences.model.first() ?: BuiltinModels.glm53.id
+        private suspend fun currentModel(): String = commandModelOverride ?: preferences.model.first() ?: BuiltinModels.glm53.id
 
         private suspend fun currentEffort(): ThinkingEffort? =
             preferences.thinkingEffort.first()?.let { effort ->
