@@ -2,10 +2,6 @@ package com.zcode.android.core.agent
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.IOException
-import java.util.zip.ZipInputStream
-import javax.inject.Inject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -13,6 +9,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
+import java.io.IOException
+import java.util.zip.ZipInputStream
+import javax.inject.Inject
 
 // Manifest of an installed plugin, read from .zcode-plugin/plugin.json.
 data class PluginManifest(
