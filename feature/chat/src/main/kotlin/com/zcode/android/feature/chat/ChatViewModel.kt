@@ -640,9 +640,9 @@ class ChatViewModel
             val positional = args.split(' ').filter { it.isNotEmpty() }
             val prompt =
                 command.template
-                    .replace("$ARGUMENTS", args)
-                    .replace("$1", positional.getOrElse(0) { "" })
-                    .replace("$2", positional.getOrElse(1) { "" })
+                    .replace("\$ARGUMENTS", args)
+                    .replace("\$1", positional.getOrElse(0) { "" })
+                    .replace("\$2", positional.getOrElse(1) { "" })
             commandModelOverride = command.model
             commandToolFilter = command.allowedTools
             send(prompt)
