@@ -32,6 +32,9 @@ abstract class ToolTestBase {
                 httpClient = OkHttpClient(),
                 webSearchBaseUrl = null,
                 webSearchApiKey = null,
+                endpoint = com.zcode.android.core.engine.LlmEndpoint(baseUrl = "https://example.invalid", protocol = com.zcode.android.core.engine.LlmProtocol.OPENAI, apiKey = "test"),
+                model = "test-model",
+                thinkingEffort = null,
             )
     }
 

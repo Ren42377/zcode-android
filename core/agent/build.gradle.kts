@@ -11,6 +11,7 @@ android {
 dependencies {
     implementation(project(":core:engine"))
     implementation(project(":core:storage"))
+    implementation(project(":core:terminal"))
     implementation(project(":core:tools"))
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.coroutines.android)

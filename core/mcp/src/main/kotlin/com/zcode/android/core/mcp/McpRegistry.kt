@@ -116,7 +116,6 @@ class McpRegistry
             }
         }
 
-        @Synchronized
         private suspend fun connect(config: McpServerConfig) {
             try {
                 val transport =
@@ -142,11 +141,15 @@ class McpRegistry
                     }
                 transport.connect()
                 transport.request("notifications/initialized", null)
-                clients[config.name] = transport
-                errors.remove(config.name)
+                synchronized(lock) {
+                    clients[config.name] = transport
+                    errors.remove(config.name)
+                }
                 refreshTools(config.name, transport)
             } catch (t: Throwable) {
-                errors[config.name] = t.message ?: "connection failed"
+                synchronized(lock) {
+                    errors[config.name] = t.message ?: "connection failed"
+                }
             }
         }
 
