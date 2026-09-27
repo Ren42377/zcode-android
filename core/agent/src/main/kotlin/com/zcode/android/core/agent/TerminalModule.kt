@@ -1,5 +1,6 @@
 package com.zcode.android.core.agent
 
+import com.zcode.android.core.engine.LlmClient
 import com.zcode.android.core.terminal.ExecService
 import dagger.Module
 import dagger.Provides
@@ -13,4 +14,8 @@ object TerminalModule {
     @Provides
     @Singleton
     fun execService(): ExecService = ExecService()
+
+    @Provides
+    @Singleton
+    fun llmClient(): LlmClient = LlmClient()
 }
