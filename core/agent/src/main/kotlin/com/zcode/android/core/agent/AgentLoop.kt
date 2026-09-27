@@ -51,6 +51,7 @@ class AgentLoop
             onCallStarted: (Call) -> Unit = {},
             instructions: String? = null,
             hooks: HookConfig? = null,
+            toolFilter: Set<String>? = null,
         ): TurnResult {
             var stopBlocks = 0
             val messages = mutableListOf(LlmMessage(role = LlmRole.SYSTEM, content = buildSystemPrompt(instructions)))
@@ -68,7 +69,12 @@ class AgentLoop
                                 messages = messages,
                                 maxOutputTokens = maxOutputTokens,
                                 thinkingEffort = thinkingEffort,
-                                tools = registry.specs(),
+                                tools =
+                                    if (toolFilter == null) {
+                                        registry.specs()
+                                    } else {
+                                        registry.specs().filter { it.name in toolFilter }
+                                    },
                             ),
                         endpoint = endpoint,
                         onEvent = { event ->
@@ -117,7 +123,7 @@ class AgentLoop
                 }
                 messages += LlmMessage(role = LlmRole.ASSISTANT, content = lastText, toolCalls = outcome.toolCalls)
                 for (call in outcome.toolCalls) {
-                    executeToolCall(call, mode, context, messages, onEvent, hooks)
+                    executeToolCall(call, mode, context, messages, onEvent, hooks, toolFilter)
                 }
             }
             return TurnResult(
@@ -134,9 +140,10 @@ class AgentLoop
             messages: MutableList<LlmMessage>,
             onEvent: (AgentEvent) -> Unit,
             hooks: HookConfig?,
+            toolFilter: Set<String>?,
         ) {
             val tool = registry.byName(call.name)
-            if (tool == null) {
+            if (tool == null || (toolFilter != null && call.name !in toolFilter)) {
                 finishTool(call, onEvent, messages, "Unknown tool: ${call.name}", isError = true)
                 return
             }
