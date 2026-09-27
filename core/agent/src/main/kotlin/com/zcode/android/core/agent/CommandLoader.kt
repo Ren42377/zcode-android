@@ -94,23 +94,28 @@ class CommandLoader
             content.substring(3, end).lines().forEach { line ->
                 val trimmed = line.trim()
                 when {
-                    trimmed.startsWith("description:") ->
+                    trimmed.startsWith("description:") -> {
                         description = trimmed.removePrefix("description:").trim().trim('"')
+                    }
 
-                    trimmed.startsWith("argument-hint:") ->
+                    trimmed.startsWith("argument-hint:") -> {
                         argumentHint = trimmed.removePrefix("argument-hint:").trim().trim('"')
+                    }
 
-                    trimmed.startsWith("model:") ->
+                    trimmed.startsWith("model:") -> {
                         model = trimmed.removePrefix("model:").trim()
+                    }
 
-                    trimmed.startsWith("allowed-tools:") ->
+                    trimmed.startsWith("allowed-tools:") -> {
                         allowedTools =
-                            trimmed.removePrefix("allowed-tools:")
+                            trimmed
+                                .removePrefix("allowed-tools:")
                                 .trim()
                                 .split(',')
                                 .map { it.trim() }
                                 .filter { it.isNotEmpty() }
                                 .toSet()
+                    }
                 }
             }
             description ?: return null
