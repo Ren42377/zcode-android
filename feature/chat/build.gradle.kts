@@ -20,6 +20,7 @@ dependencies {
     implementation(project(":core:mcp"))
     implementation(project(":core:tools"))
     implementation(project(":core:storage"))
+    implementation(project(":core:terminal"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)
