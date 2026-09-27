@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.markdown.renderer)
+    implementation(libs.okhttp)
     implementation(libs.markdown.renderer.m3)
 
     ksp(libs.hilt.compiler)
