@@ -20,13 +20,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 class TermuxBridge(
     private val context: Context,
 ) : ExecBackend {
-    fun isInstalled(): Boolean =
-        runCatching { context.packageManager.getPackageInfo(PACKAGE_NAME, 0) }.isSuccess
+    fun isInstalled(): Boolean = runCatching { context.packageManager.getPackageInfo(PACKAGE_NAME, 0) }.isSuccess
 
     fun isReady(): Boolean = isInstalled() && isPermissionGranted()
 
-    fun isPermissionGranted(): Boolean =
-        context.checkSelfPermission(PERMISSION_NAME) == PackageManager.PERMISSION_GRANTED
+    fun isPermissionGranted(): Boolean = context.checkSelfPermission(PERMISSION_NAME) == PackageManager.PERMISSION_GRANTED
 
     // Runs one command with the Termux userland. The command string is executed
     // by the Termux shell; the combined output follows the ExecResult contract
@@ -40,7 +38,12 @@ class TermuxBridge(
     ): ExecResult =
         withContext(Dispatchers.IO) {
             if (!isReady()) {
-                return@withContext ExecResult(exitCode = -1, output = "Termux is not ready: install the app, grant the RUN_COMMAND permission, and enable allow-external-apps.", timedOut = false, truncated = false)
+                return@withContext ExecResult(
+                    exitCode = -1,
+                    output = "Termux is not ready: install the app, grant the RUN_COMMAND permission, and enable allow-external-apps.",
+                    timedOut = false,
+                    truncated = false,
+                )
             }
             val resultDeferred = CompletableDeferred<Bundle>()
             val action = "zcode.android.TERMUX_RESULT." + System.currentTimeMillis()
@@ -86,7 +89,12 @@ class TermuxBridge(
                 context.startService(intent)
                 val bundle = withTimeoutOrNull(timeoutMs) { resultDeferred.await() }
                 if (bundle == null) {
-                    return@withContext ExecResult(exitCode = -1, output = "[command timed out after ${timeoutMs}ms]", timedOut = true, truncated = false)
+                    return@withContext ExecResult(
+                        exitCode = -1,
+                        output = "[command timed out after ${timeoutMs}ms]",
+                        timedOut = true,
+                        truncated = false,
+                    )
                 }
                 val stdout = bundle.getString(EXTRA_RESULT_STDOUT).orEmpty()
                 val stderr = bundle.getString(EXTRA_RESULT_STDERR).orEmpty()
