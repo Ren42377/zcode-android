@@ -10,10 +10,11 @@ internal object PtyChannel {
         System.loadLibrary("zcodepty")
     }
 
-    // Returns [pid, masterFd]; throws IOException on failure.
+    // Returns [pid, masterFd]; throws IOException on failure. The working
+    // directory may be null to inherit the process default.
     external fun forkExec(
         cmd: Array<String>,
-        cwd: String,
+        cwd: String?,
         env: Array<String>,
         rows: Int,
         cols: Int,
