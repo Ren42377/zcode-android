@@ -35,7 +35,9 @@ import com.zcode.android.core.storage.SessionEntity
 import com.zcode.android.core.storage.ToolEventDao
 import com.zcode.android.core.storage.ToolEventEntity
 import com.zcode.android.core.storage.UserPreferences
+import com.zcode.android.core.terminal.ExecBackend
 import com.zcode.android.core.terminal.ExecService
+import com.zcode.android.core.terminal.TermuxBridge
 import com.zcode.android.core.tools.BashTool
 import com.zcode.android.core.tools.TodoItem
 import com.zcode.android.core.tools.ToolContext
@@ -117,7 +119,7 @@ class ChatViewModel
         private val hookRunner: HookRunner,
         private val mcpRegistry: McpRegistry,
         private val commandLoader: CommandLoader,
-        private val exec: ExecService,
+        private val execService: ExecService,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
 
@@ -184,6 +186,8 @@ class ChatViewModel
         private val customCommands: Map<String, CustomCommand> = commandLoader.load(null)
 
         private val httpClient = OkHttpClient()
+
+        private val termuxBridge = TermuxBridge(appContext)
 
         init {
             viewModelScope.launch {
@@ -611,9 +615,16 @@ class ChatViewModel
                 } else {
                     null
                 }
+            val termuxEnabled = preferences.termuxMode.first()
+            val backend: ExecBackend =
+                if (termuxEnabled && termuxBridge.isReady()) {
+                    termuxBridge
+                } else {
+                    execService
+                }
             return ToolContext(
                 workspaceRoot = workspace(),
-                exec = exec,
+                exec = backend,
                 shellEnvironment =
                     BashTool.buildEnvironment(
                         homeDirectory = appContext.filesDir.path,

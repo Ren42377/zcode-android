@@ -20,13 +20,13 @@ data class ExecResult(
 
 // Executes single commands on a PTY so behavior matches the interactive
 // terminal. Used by the agent's Bash tool and by hooks.
-class ExecService {
-    suspend fun exec(
+class ExecService : ExecBackend {
+    override suspend fun exec(
         command: String,
-        workingDirectory: String,
+        workingDirectory: String?,
         environment: Array<String>,
-        timeoutMs: Long = DEFAULT_TIMEOUT_MS,
-        maxOutputBytes: Int = DEFAULT_MAX_OUTPUT_BYTES,
+        timeoutMs: Long,
+        maxOutputBytes: Int,
     ): ExecResult =
         withContext(Dispatchers.IO) {
             val session = ShellSession.startNonInteractive(command, workingDirectory, environment)

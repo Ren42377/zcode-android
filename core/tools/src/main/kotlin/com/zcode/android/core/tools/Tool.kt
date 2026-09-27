@@ -1,6 +1,6 @@
 package com.zcode.android.core.tools
 
-import com.zcode.android.core.terminal.ExecService
+import com.zcode.android.core.terminal.ExecBackend
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -20,7 +20,7 @@ data class ToolOutcome(
 // Per-turn environment handed to every tool execution.
 class ToolContext(
     val workspaceRoot: File,
-    val exec: ExecService,
+    val exec: ExecBackend,
     val shellEnvironment: Array<String>,
     val httpClient: OkHttpClient,
     // Web search uses the provider endpoint; null disables the tool.

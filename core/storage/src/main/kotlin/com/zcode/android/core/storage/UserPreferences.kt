@@ -35,6 +35,9 @@ class UserPreferences(
     val alwaysAllowedTools: Flow<Set<String>> =
         context.dataStore.data.map { it[KEY_ALWAYS_ALLOWED_TOOLS] ?: emptySet() }
 
+    val termuxMode: Flow<Boolean> =
+        context.dataStore.data.map { it[KEY_TERMUX_MODE] ?: false }
+
     suspend fun setOnboarded(value: Boolean) {
         context.dataStore.edit { it[KEY_ONBOARDED] = value }
     }
@@ -67,6 +70,10 @@ class UserPreferences(
         }
     }
 
+    suspend fun setTermuxMode(value: Boolean) {
+        context.dataStore.edit { it[KEY_TERMUX_MODE] = value }
+    }
+
     suspend fun removeAlwaysAllowedTool(name: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_ALWAYS_ALLOWED_TOOLS] = (prefs[KEY_ALWAYS_ALLOWED_TOOLS] ?: emptySet()) - name
@@ -84,5 +91,6 @@ class UserPreferences(
         val KEY_THINKING_EFFORT = key("thinking_effort")
         val KEY_PERMISSION_MODE = key("permission_mode")
         val KEY_ALWAYS_ALLOWED_TOOLS = stringSetPreferencesKey("always_allowed_tools")
+        val KEY_TERMUX_MODE = booleanPreferencesKey("termux_mode")
     }
 }
