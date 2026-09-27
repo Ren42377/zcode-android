@@ -12,12 +12,12 @@ import com.zcode.android.core.tools.ToolContext
 import com.zcode.android.core.tools.ToolOutcome
 import com.zcode.android.core.tools.ToolRegistry
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class SubagentSpec(
     val name: String,
@@ -117,8 +117,9 @@ class SubagentRunner
                     val tool = registry.byName(call.name)
                     val result: String =
                         when {
-                            tool == null || spec.allowedTools?.contains(call.name) == false ->
+                            tool == null || spec.allowedTools?.contains(call.name) == false -> {
                                 "Tool " + call.name + " is not available to this subagent."
+                            }
 
                             else -> {
                                 val args =
@@ -166,19 +167,29 @@ class SubagentRunner
             frontMatter.lines().forEach { line ->
                 val trimmed = line.trim()
                 when {
-                    trimmed.startsWith("name:") -> name = trimmed.removePrefix("name:").trim()
-                    trimmed.startsWith("description:") -> description = trimmed.removePrefix("description:").trim()
-                    trimmed.startsWith("tools:") ->
+                    trimmed.startsWith("name:") -> {
+                        name = trimmed.removePrefix("name:").trim()
+                    }
+
+                    trimmed.startsWith("description:") -> {
+                        description = trimmed.removePrefix("description:").trim()
+                    }
+
+                    trimmed.startsWith("tools:") -> {
                         tools =
-                            trimmed.removePrefix("tools:")
+                            trimmed
+                                .removePrefix("tools:")
                                 .trim()
                                 .trim('[', ']')
                                 .split(',')
                                 .map { it.trim().trim('"') }
                                 .filter { it.isNotEmpty() }
                                 .toSet()
+                    }
 
-                    trimmed.startsWith("maxTurns:") -> maxTurns = trimmed.removePrefix("maxTurns:").trim().toIntOrNull() ?: maxTurns
+                    trimmed.startsWith("maxTurns:") -> {
+                        maxTurns = trimmed.removePrefix("maxTurns:").trim().toIntOrNull() ?: maxTurns
+                    }
                 }
             }
             name ?: return null

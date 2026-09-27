@@ -9,10 +9,9 @@ import dagger.hilt.InstallIn
 import dagger.multibindings.IntoSet
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 
@@ -77,10 +76,18 @@ class TaskTool
             val typeName = (input["subagent_type"] as? JsonPrimitive)?.contentOrNull ?: "general-purpose"
             val spec =
                 when (typeName) {
-                    "Explore" -> SubagentSpec.EXPLORE
-                    "general-purpose" -> SubagentSpec.GENERAL_PURPOSE
-                    else -> runner.loadCustomAgents(context.workspaceRoot)[typeName]
-                        ?: return ToolOutcome(outputForModel = "Unknown subagent: $typeName", isError = true)
+                    "Explore" -> {
+                        SubagentSpec.EXPLORE
+                    }
+
+                    "general-purpose" -> {
+                        SubagentSpec.GENERAL_PURPOSE
+                    }
+
+                    else -> {
+                        runner.loadCustomAgents(context.workspaceRoot)[typeName]
+                            ?: return ToolOutcome(outputForModel = "Unknown subagent: $typeName", isError = true)
+                    }
                 }
             val answer = runner.run(spec, prompt, context.endpoint, context.model, context.thinkingEffort, context)
             return ToolOutcome(outputForModel = answer)
