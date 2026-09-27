@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import java.io.File
@@ -232,7 +233,7 @@ class ChatViewModel
             val args = body.substringAfter(' ', missingDelimiterValue = "").trim()
             when (name) {
                 "help" -> {
-                    insertLocalMessage(helpText())
+                    viewModelScope.launch { insertLocalMessage(helpText()) }
                 }
 
                 "model" -> {
