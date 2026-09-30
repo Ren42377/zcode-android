@@ -48,6 +48,11 @@ interface MessageDao {
     suspend fun clear(sessionId: String)
 }
 
+data class SessionUsage(
+    val inputTokens: Int,
+    val outputTokens: Int,
+)
+
 @Dao
 interface ToolEventDao {
     @Query("SELECT * FROM tool_events WHERE sessionId = :sessionId ORDER BY createdAt ASC")
@@ -55,4 +60,7 @@ interface ToolEventDao {
 
     @Insert
     suspend fun insert(event: ToolEventEntity)
+
+    @Query("SELECT IFNULL(SUM(inputTokens), 0) AS inputTokens, IFNULL(SUM(outputTokens), 0) AS outputTokens FROM messages WHERE sessionId = :sessionId")
+    fun observeUsage(sessionId: String): Flow<SessionUsage>
 }

@@ -159,6 +159,11 @@ class ChatViewModel
         private val _pendingApproval = MutableStateFlow<PendingApproval?>(null)
         val pendingApproval: StateFlow<PendingApproval?> = _pendingApproval.asStateFlow()
 
+        val usage: StateFlow<com.zcode.android.core.storage.SessionUsage> =
+            sessionKey
+                .flatMapLatest { messageDao.observeUsage(it) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), com.zcode.android.core.storage.SessionUsage(0, 0))
+
         private val _todos = MutableStateFlow<List<TodoItem>>(emptyList())
         val todos: StateFlow<List<TodoItem>> = _todos.asStateFlow()
 
@@ -338,6 +343,50 @@ class ChatViewModel
             _openSessionsRequested.value = false
         }
 
+        // Compacts the history once the session exceeds the context budget, which
+        // mirrors the ZCode automatic compaction behavior. The summary becomes the
+        // new history anchor so the next turn starts from it.
+        private suspend fun compactIfNeeded() {
+            val history = messageDao.list(sessionKey.value)
+            val totalTokens =
+                history.sumOf { message ->
+                    (message.inputTokens ?: 0) + (message.outputTokens ?: 0)
+                }
+            val modelSpec = BuiltinModels.byId(currentModel())
+            val budget = (modelSpec?.contextTokens ?: 128_000L) * AUTO_COMPACT_RATIO
+            if (totalTokens < budget || history.size < 4) {
+                return
+            }
+            val endpoint = resolveEndpoint() ?: return
+            val transcript =
+                history.joinToString(separator = "\n\n") { message ->
+                    "${message.role}: ${message.content}".take(2_000)
+                }.take(MAX_COMPACT_CHARS)
+            val text = StringBuilder()
+            runCatching {
+                client.stream(
+                    request =
+                        LlmRequest(
+                            model = currentModel(),
+                            messages =
+                                listOf(
+                                    LlmMessage(role = LlmRole.SYSTEM, content = COMPACTION_PROMPT),
+                                    LlmMessage(role = LlmRole.USER, content = transcript),
+                                ),
+                        ),
+                    endpoint = endpoint,
+                    onEvent = { event ->
+                        if (event is LlmEvent.TextDelta) {
+                            text.append(event.text)
+                        }
+                    },
+                )
+            }
+            if (text.isNotEmpty()) {
+                insertRoleMessage(ROLE_SUMMARY, text.toString())
+            }
+        }
+
         private fun showMcpStatus() {
             viewModelScope.launch {
                 val statuses = mcpRegistry.statuses
@@ -502,6 +551,7 @@ class ChatViewModel
                         _error.value = "No provider configured"
                         return@launch
                     }
+                    compactIfNeeded()
                     val hookConfig = hookRunner.loadConfig(workspace())
                     mcpRegistry.loadConfig(workspace())
                     mcpRegistry.connectAll()
@@ -855,6 +905,7 @@ class ChatViewModel
             private const val ROLE_SUMMARY = "summary"
             private const val ROLE_GOAL = "goal"
             private const val MAX_COMPACT_CHARS = 48_000
+            private const val AUTO_COMPACT_RATIO = 0.75
             private const val MAX_INSTRUCTION_CHARS = 12_000
             private const val COMPACTION_PROMPT =
                 "Summarize this conversation. Capture every decision made, every file changed, " +

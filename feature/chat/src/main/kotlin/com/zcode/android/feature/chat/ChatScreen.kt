@@ -69,6 +69,7 @@ fun ChatScreen(
     val pendingApproval by viewModel.pendingApproval.collectAsStateWithLifecycle()
     val pendingQuestion by viewModel.pendingQuestion.collectAsStateWithLifecycle()
     val openSessionsRequested by viewModel.openSessionsRequested.collectAsStateWithLifecycle()
+    val usage by viewModel.usage.collectAsStateWithLifecycle()
     val todos by viewModel.todos.collectAsStateWithLifecycle()
     val queued by viewModel.queued.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -138,6 +139,11 @@ fun ChatScreen(
                     color = ZcodeColors.primary,
                 )
             }
+            Text(
+                text = "${usage.inputTokens + usage.outputTokens} tok",
+                style = MaterialTheme.typography.labelSmall,
+                color = ZcodeColors.muted,
+            )
             TextButton(onClick = onOpenFiles) {
                 Text(
                     text = "Files",
