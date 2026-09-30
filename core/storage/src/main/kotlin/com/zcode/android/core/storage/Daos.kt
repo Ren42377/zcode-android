@@ -65,5 +65,4 @@ interface ToolEventDao {
 
     @Insert
     suspend fun insert(event: ToolEventEntity)
-
 }
