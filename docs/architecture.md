@@ -27,8 +27,8 @@ The agent engine is written natively in Kotlin rather than running the original 
 | `:core:config` | ZCode compatible config files, skills, commands, and plugin loaders (planned, M4) |
 | `:feature:chat` | Chat screen with transcript, tool cards, approval panel, todo widget, and message queue |
 | `:feature:terminal` | Terminal screen with helper keys |
-| `:feature:workspace` | File explorer and workspace picker (planned, M5) |
-| `:feature:settings` | Settings screens (planned, M5) |
+| `:feature:workspace` | File explorer with change markers and read only file preview |
+| `:feature:settings` | Settings, MCP and hook status, session list, usage, and update check |
 
 All modules exist since the foundation milestone so that the dependency rules apply from the first build. Modules without sources contain only their Gradle build file; sources land together with the milestone that owns them.
 
