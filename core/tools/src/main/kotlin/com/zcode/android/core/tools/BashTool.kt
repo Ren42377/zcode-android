@@ -51,6 +51,7 @@ class BashTool : Tool {
                 workingDirectory = context.workspaceRoot.path,
                 environment = context.shellEnvironment,
                 timeoutMs = timeout ?: ExecService.DEFAULT_TIMEOUT_MS,
+                maxOutputBytes = ExecService.DEFAULT_MAX_OUTPUT_BYTES,
             )
         val prefix =
             if (result.exitCode != 0) {
