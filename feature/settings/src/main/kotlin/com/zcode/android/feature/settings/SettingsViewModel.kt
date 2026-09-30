@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zcode.android.core.agent.HookRunner
 import com.zcode.android.core.agent.PermissionMode
+import com.zcode.android.core.agent.PluginLoader
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.ProviderPresets
 import com.zcode.android.core.mcp.McpRegistry
@@ -42,6 +43,7 @@ class SettingsViewModel
         private val mcpRegistry: McpRegistry,
         private val hookRunner: HookRunner,
         private val updateChecker: UpdateChecker,
+        private val pluginLoader: PluginLoader,
     ) : ViewModel() {
         val providerId: StateFlow<String?> =
             preferences.providerId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -70,12 +72,45 @@ class SettingsViewModel
         private val _update = MutableStateFlow(UpdateStatus())
         val update: StateFlow<UpdateStatus> = _update.asStateFlow()
 
+        private val _plugins = MutableStateFlow<List<String>>(emptyList())
+        val plugins: StateFlow<List<String>> = _plugins.asStateFlow()
+
         val termuxInstalled: Boolean = TermuxBridge(appContext).isInstalled()
 
         val termuxPermissionGranted: Boolean = TermuxBridge(appContext).isPermissionGranted()
 
         init {
             refreshMcp()
+            refreshPlugins()
+        }
+
+        fun refreshPlugins() {
+            _plugins.value =
+                pluginLoader.installed().map { manifest ->
+                    "${manifest.name} ${manifest.version}: ${manifest.description}"
+                }
+        }
+
+        fun installPlugin(
+            repo: String,
+            ref: String,
+        ) {
+            viewModelScope.launch {
+                try {
+                    val manifest = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { pluginLoader.installFromGitHub(repo, ref) }
+                    _update.value = UpdateStatus(message = "Installed ${manifest.name} ${manifest.version}")
+                    refreshPlugins()
+                } catch (e: java.io.IOException) {
+                    _update.value = UpdateStatus(message = "Install failed: ${e.message}")
+                }
+            }
+        }
+
+        fun uninstallPlugin(name: String) {
+            viewModelScope.launch {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { pluginLoader.uninstall(name) }
+                refreshPlugins()
+            }
         }
 
         fun setProvider(id: String) {

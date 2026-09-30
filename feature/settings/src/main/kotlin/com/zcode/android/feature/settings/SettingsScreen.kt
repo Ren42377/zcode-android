@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -20,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -43,6 +48,8 @@ fun SettingsScreen(
     val alwaysAllowed by viewModel.alwaysAllowed.collectAsStateWithLifecycle()
     val mcpStatuses by viewModel.mcpStatuses.collectAsStateWithLifecycle()
     val update by viewModel.update.collectAsStateWithLifecycle()
+    val plugins by viewModel.plugins.collectAsStateWithLifecycle()
+    var pluginRepo by remember { mutableStateOf("") }
 
     Column(
         modifier =
@@ -153,6 +160,54 @@ fun SettingsScreen(
                 fontFamily = FontFamily.Monospace,
                 color = ZcodeColors.muted,
             )
+        }
+
+        Section(title = "Plugins") {
+            if (plugins.isEmpty()) {
+                Text(
+                    text = "No plugins installed.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ZcodeColors.muted,
+                )
+            } else {
+                plugins.forEach { plugin ->
+                    Text(
+                        text = plugin,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = ZcodeColors.text,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = pluginRepo,
+                    onValueChange = { pluginRepo = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text(text = "owner/repo", color = ZcodeColors.muted) },
+                    singleLine = true,
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ZcodeColors.primary,
+                            unfocusedBorderColor = ZcodeColors.border,
+                            cursorColor = ZcodeColors.primary,
+                            focusedTextColor = ZcodeColors.text,
+                            unfocusedTextColor = ZcodeColors.text,
+                        ),
+                )
+                TextButton(
+                    onClick = {
+                        viewModel.installPlugin(pluginRepo.trim(), "main")
+                        pluginRepo = ""
+                    },
+                ) {
+                    Text(text = "Install", color = ZcodeColors.primary)
+                }
+            }
         }
 
         Section(title = "Updates") {
