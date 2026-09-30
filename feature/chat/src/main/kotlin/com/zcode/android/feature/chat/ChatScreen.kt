@@ -67,6 +67,7 @@ fun ChatScreen(
     val streaming by viewModel.streaming.collectAsStateWithLifecycle()
     val runningTools by viewModel.runningTools.collectAsStateWithLifecycle()
     val pendingApproval by viewModel.pendingApproval.collectAsStateWithLifecycle()
+    val pendingQuestion by viewModel.pendingQuestion.collectAsStateWithLifecycle()
     val todos by viewModel.todos.collectAsStateWithLifecycle()
     val queued by viewModel.queued.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -293,6 +294,10 @@ fun ChatScreen(
             }
         }
 
+        pendingQuestion?.let { question ->
+            QuestionPanel(question = question, onAnswer = viewModel::answerQuestion)
+        }
+
         pendingApproval?.let { approval ->
             ApprovalPanel(
                 approval = approval,
@@ -493,6 +498,37 @@ private fun TodoWidget(todos: List<TodoItem>) {
                     fontFamily = FontFamily.Monospace,
                     color = if (todo.status == "completed") ZcodeColors.muted else ZcodeColors.text,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuestionPanel(
+    question: QuestionCard,
+    onAnswer: (String) -> Unit,
+) {
+    Surface(
+        color = ZcodeColors.panel,
+        shape = RoundedCornerShape(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .border(width = 1.dp, color = ZcodeColors.secondary, shape = RoundedCornerShape(12.dp)),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = question.question,
+                style = MaterialTheme.typography.titleSmall,
+                color = ZcodeColors.text,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                question.options.forEach { option ->
+                    TextButton(onClick = { onAnswer(option) }) {
+                        Text(text = option, color = ZcodeColors.primary)
+                    }
+                }
             }
         }
     }

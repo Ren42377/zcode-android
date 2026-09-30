@@ -14,6 +14,7 @@ import com.zcode.android.core.agent.HookConfig
 import com.zcode.android.core.agent.HookRunner
 import com.zcode.android.core.agent.MemoryStore
 import com.zcode.android.core.agent.PermissionMode
+import com.zcode.android.core.agent.QuestionCoordinator
 import com.zcode.android.core.agent.SkillLoader
 import com.zcode.android.core.engine.BuiltinModels
 import com.zcode.android.core.engine.LlmClient
@@ -41,6 +42,7 @@ import com.zcode.android.core.terminal.TermuxBridge
 import com.zcode.android.core.tools.BashTool
 import com.zcode.android.core.tools.TodoItem
 import com.zcode.android.core.tools.ToolContext
+import com.zcode.android.core.tools.ToolUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -73,6 +75,12 @@ data class RunningTool(
     val callId: String,
     val name: String,
     val summary: String,
+)
+
+data class QuestionCard(
+    val questionId: String,
+    val question: String,
+    val options: List<String>,
 )
 
 data class PendingApproval(
@@ -119,6 +127,7 @@ class ChatViewModel
         private val hookRunner: HookRunner,
         private val mcpRegistry: McpRegistry,
         private val commandLoader: CommandLoader,
+        private val questions: QuestionCoordinator,
         private val execService: ExecService,
     ) : ViewModel() {
         private val sessionKey = MutableStateFlow(savedStateHandle.get<String>(SESSION_ARG) ?: NEW_SESSION)
@@ -167,6 +176,9 @@ class ChatViewModel
 
         private val _pickerOpen = MutableStateFlow(false)
         val pickerOpen: StateFlow<Boolean> = _pickerOpen.asStateFlow()
+
+        private val _pendingQuestion = MutableStateFlow<QuestionCard?>(null)
+        val pendingQuestion: StateFlow<QuestionCard?> = _pendingQuestion.asStateFlow()
 
         private var turnJob: Job? = null
         private var activeCall: Call? = null
@@ -309,6 +321,12 @@ class ChatViewModel
 
         fun openPicker() {
             _pickerOpen.value = true
+        }
+
+        fun answerQuestion(answer: String) {
+            val card = _pendingQuestion.value ?: return
+            questions.answer(card.questionId, answer)
+            _pendingQuestion.value = null
         }
 
         private fun cycleEffort() {
@@ -516,6 +534,7 @@ class ChatViewModel
                         activeCall = null
                         commandModelOverride = null
                         commandToolFilter = null
+                        _pendingQuestion.value = null
                         val next = _queued.value.firstOrNull()
                         if (next != null) {
                             _queued.value = _queued.value.drop(1)
@@ -634,6 +653,18 @@ class ChatViewModel
                 httpClient = httpClient,
                 webSearchBaseUrl = webSearchBase,
                 webSearchApiKey = endpoint.apiKey,
+                onUiEvent = { event ->
+                    when (event) {
+                        is ToolUiEvent.Question -> {
+                            _pendingQuestion.value =
+                                QuestionCard(
+                                    questionId = event.questionId,
+                                    question = event.question,
+                                    options = event.options,
+                                )
+                        }
+                    }
+                },
                 endpoint = endpoint,
                 model = currentModel(),
                 thinkingEffort = currentEffort(),

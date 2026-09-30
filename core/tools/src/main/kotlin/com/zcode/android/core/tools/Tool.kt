@@ -30,7 +30,18 @@ class ToolContext(
     val endpoint: com.zcode.android.core.engine.LlmEndpoint,
     val model: String,
     val thinkingEffort: com.zcode.android.core.engine.ThinkingEffort?,
+    // Sink for events a tool needs the UI to show, for example a question card.
+    val onUiEvent: (ToolUiEvent) -> Unit = {},
 )
+
+// Events raised from inside a tool that the chat screen renders.
+sealed interface ToolUiEvent {
+    data class Question(
+        val questionId: String,
+        val question: String,
+        val options: List<String>,
+    ) : ToolUiEvent
+}
 
 interface Tool {
     val name: String

@@ -37,6 +37,12 @@ sealed interface AgentEvent {
     data class TodoListUpdated(
         val todos: List<TodoItem>,
     ) : AgentEvent
+
+    data class QuestionAsked(
+        val questionId: String,
+        val question: String,
+        val options: List<String>,
+    ) : AgentEvent
 }
 
 enum class ApprovalAnswer {
