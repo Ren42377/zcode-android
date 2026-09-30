@@ -593,6 +593,15 @@ class ChatViewModel
                 is AgentEvent.TodoListUpdated -> {
                     _todos.value = event.todos
                 }
+
+                is AgentEvent.QuestionAsked -> {
+                    _pendingQuestion.value =
+                        QuestionCard(
+                            questionId = event.questionId,
+                            question = event.question,
+                            options = event.options,
+                        )
+                }
             }
         }
 
