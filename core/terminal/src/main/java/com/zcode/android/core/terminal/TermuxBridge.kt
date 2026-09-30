@@ -73,7 +73,7 @@ class TermuxBridge(
                     PendingIntent.getBroadcast(
                         context,
                         action.hashCode(),
-                        Intent(action),
+                        Intent(action).setPackage(context.packageName),
                         PendingIntent.FLAG_MUTABLE,
                     )
                 val intent =
