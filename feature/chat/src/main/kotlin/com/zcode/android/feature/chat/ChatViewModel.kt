@@ -162,7 +162,12 @@ class ChatViewModel
         val usage: StateFlow<com.zcode.android.core.storage.SessionUsage> =
             sessionKey
                 .flatMapLatest { messageDao.observeUsage(it) }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), com.zcode.android.core.storage.SessionUsage(0, 0))
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5_000),
+                    com.zcode.android.core.storage
+                        .SessionUsage(0, 0),
+                )
 
         private val _todos = MutableStateFlow<List<TodoItem>>(emptyList())
         val todos: StateFlow<List<TodoItem>> = _todos.asStateFlow()
@@ -359,9 +364,10 @@ class ChatViewModel
             }
             val endpoint = resolveEndpoint() ?: return
             val transcript =
-                history.joinToString(separator = "\n\n") { message ->
-                    "${message.role}: ${message.content}".take(2_000)
-                }.take(MAX_COMPACT_CHARS)
+                history
+                    .joinToString(separator = "\n\n") { message ->
+                        "${message.role}: ${message.content}".take(2_000)
+                    }.take(MAX_COMPACT_CHARS)
             val text = StringBuilder()
             runCatching {
                 client.stream(
