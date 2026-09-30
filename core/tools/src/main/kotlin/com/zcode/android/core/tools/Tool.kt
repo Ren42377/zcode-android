@@ -74,7 +74,7 @@ internal fun JsonObject.intField(key: String): Int? = (this[key] as? JsonPrimiti
 
 internal fun toolError(message: String): ToolOutcome = ToolOutcome(outputForModel = message, isError = true)
 
-internal fun requiredFields(vararg names: String): JsonArray =
+fun requiredFields(vararg names: String): JsonArray =
     buildJsonArray {
         names.forEach { add(JsonPrimitive(it)) }
     }
