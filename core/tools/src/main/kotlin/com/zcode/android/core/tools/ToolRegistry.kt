@@ -20,14 +20,19 @@ interface ExternalToolProvider {
 abstract class ExternalToolModule {
     @Multibinds
     abstract fun externalToolProviders(): Set<ExternalToolProvider>
+
+    @Multibinds
+    abstract fun contributedTools(): Set<Tool>
 }
 
-// Registry of the v1 tool set plus any external providers. Tool names and
-// semantics follow ZCode so prompts and behavior stay compatible.
+// Registry of the built-in v1 tool set plus tools contributed by other modules
+// (the Task tool) and external providers (MCP servers). Tool names and semantics
+// follow ZCode so prompts and behavior stay compatible.
 class ToolRegistry
     @Inject
     constructor(
         private val externalProviders: Set<@JvmSuppressWildcards ExternalToolProvider>,
+        private val contributedTools: Set<@JvmSuppressWildcards Tool>,
     ) {
         private val tools: List<Tool> =
             listOf(
@@ -40,7 +45,7 @@ class ToolRegistry
                 TodoWriteTool(),
                 WebFetchTool(),
                 WebSearchTool(),
-            )
+            ) + contributedTools
 
         private val byName: Map<String, Tool> = tools.associateBy { it.name }
 
@@ -53,5 +58,6 @@ class ToolRegistry
                 )
             } + externalProviders.flatMap { provider -> provider.specs() }
 
-        fun byName(name: String): Tool? = byName[name] ?: externalProviders.firstNotNullOfOrNull { provider -> provider.byName(name) }
+        fun byName(name: String): Tool? =
+            byName[name] ?: externalProviders.firstNotNullOfOrNull { provider -> provider.byName(name) }
     }

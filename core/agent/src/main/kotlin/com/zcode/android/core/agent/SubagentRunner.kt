@@ -54,7 +54,7 @@ class SubagentRunner
     constructor(
         @ApplicationContext private val context: Context,
         private val client: LlmClient,
-        private val registry: ToolRegistry,
+        private val registry: dagger.Lazy<ToolRegistry>,
     ) {
         private val json = Json { ignoreUnknownKeys = true }
 
@@ -78,7 +78,7 @@ class SubagentRunner
             thinkingEffort: ThinkingEffort?,
             context: ToolContext,
         ): String {
-            val tools = registry.specs().filter { spec.allowedTools == null || it.name in spec.allowedTools }
+            val tools = registry.get().specs().filter { spec.allowedTools == null || it.name in spec.allowedTools }
             val messages =
                 mutableListOf(
                     LlmMessage(
@@ -114,7 +114,7 @@ class SubagentRunner
                 }
                 messages += LlmMessage(role = LlmRole.ASSISTANT, content = lastText, toolCalls = outcome.toolCalls)
                 for (call in outcome.toolCalls) {
-                    val tool = registry.byName(call.name)
+                    val tool = registry.get().byName(call.name)
                     val result: String =
                         when {
                             tool == null || spec.allowedTools?.contains(call.name) == false -> {
