@@ -19,6 +19,9 @@ object SlashCommands {
             SlashCommand("goal", "Store a goal that stays in the agent context"),
             SlashCommand("init", "Create an AGENTS.md in the workspace"),
             SlashCommand("memory", "Show the project memory"),
+            SlashCommand("mcp", "Show MCP server status"),
+            SlashCommand("skill", "List the available skills"),
+            SlashCommand("resume", "Open the session list"),
         )
 
     fun matching(prefix: String): List<SlashCommand> =

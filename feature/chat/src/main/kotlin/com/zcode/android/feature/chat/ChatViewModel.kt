@@ -180,6 +180,9 @@ class ChatViewModel
         private val _pendingQuestion = MutableStateFlow<QuestionCard?>(null)
         val pendingQuestion: StateFlow<QuestionCard?> = _pendingQuestion.asStateFlow()
 
+        private val _openSessionsRequested = MutableStateFlow(false)
+        val openSessionsRequested: StateFlow<Boolean> = _openSessionsRequested.asStateFlow()
+
         private var turnJob: Job? = null
         private var activeCall: Call? = null
 
@@ -302,6 +305,18 @@ class ChatViewModel
                     initAgentsMd()
                 }
 
+                "mcp" -> {
+                    showMcpStatus()
+                }
+
+                "skill" -> {
+                    showSkills()
+                }
+
+                "resume" -> {
+                    _openSessionsRequested.value = true
+                }
+
                 "memory" -> {
                     showMemory()
                 }
@@ -317,6 +332,39 @@ class ChatViewModel
 
         fun pickerShown() {
             _pickerOpen.value = false
+        }
+
+        fun sessionsOpened() {
+            _openSessionsRequested.value = false
+        }
+
+        private fun showMcpStatus() {
+            viewModelScope.launch {
+                val statuses = mcpRegistry.statuses
+                val text =
+                    if (statuses.isEmpty()) {
+                        "No MCP servers configured."
+                    } else {
+                        statuses.joinToString(separator = "\n") { status ->
+                            val state = if (status.connected) "connected" else "offline"
+                            "${status.name} (${status.transport}): $state, ${status.toolCount} tools"
+                        }
+                    }
+                insertLocalMessage(text)
+            }
+        }
+
+        private fun showSkills() {
+            viewModelScope.launch {
+                val skills = skillLoader.load(workspace())
+                val text =
+                    if (skills.isEmpty()) {
+                        "No skills found. Add folders with SKILL.md under config/skills or .zcode/skills."
+                    } else {
+                        skills.joinToString(separator = "\n") { skill -> "- ${skill.name}: ${skill.description}" }
+                    }
+                insertLocalMessage(text)
+            }
         }
 
         fun openPicker() {

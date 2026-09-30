@@ -68,6 +68,7 @@ fun ChatScreen(
     val runningTools by viewModel.runningTools.collectAsStateWithLifecycle()
     val pendingApproval by viewModel.pendingApproval.collectAsStateWithLifecycle()
     val pendingQuestion by viewModel.pendingQuestion.collectAsStateWithLifecycle()
+    val openSessionsRequested by viewModel.openSessionsRequested.collectAsStateWithLifecycle()
     val todos by viewModel.todos.collectAsStateWithLifecycle()
     val queued by viewModel.queued.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -80,6 +81,13 @@ fun ChatScreen(
 
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+
+    LaunchedEffect(openSessionsRequested) {
+        if (openSessionsRequested) {
+            viewModel.sessionsOpened()
+            onOpenSessions()
+        }
+    }
 
     val rowCount = rows.size + runningTools.size + if (streaming == null) 0 else 1
     LaunchedEffect(rowCount, streaming?.content?.length, streaming?.thinking?.length) {
