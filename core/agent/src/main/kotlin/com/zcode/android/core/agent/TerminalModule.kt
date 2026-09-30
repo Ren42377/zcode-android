@@ -6,6 +6,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
 import javax.inject.Singleton
 
 @Module
@@ -18,4 +19,8 @@ object TerminalModule {
     @Provides
     @Singleton
     fun llmClient(): LlmClient = LlmClient()
+
+    @Provides
+    @Singleton
+    fun okHttpClient(): OkHttpClient = OkHttpClient()
 }
