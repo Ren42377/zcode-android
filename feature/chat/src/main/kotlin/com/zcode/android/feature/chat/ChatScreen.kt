@@ -58,6 +58,8 @@ import com.zcode.android.core.tools.TodoItem
 @Composable
 fun ChatScreen(
     onOpenTerminal: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenSessions: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
@@ -122,6 +124,20 @@ fun ChatScreen(
             TextButton(onClick = onOpenTerminal) {
                 Text(
                     text = ">_",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ZcodeColors.primary,
+                )
+            }
+            TextButton(onClick = onOpenSessions) {
+                Text(
+                    text = "Sessions",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ZcodeColors.primary,
+                )
+            }
+            TextButton(onClick = onOpenSettings) {
+                Text(
+                    text = "Settings",
                     style = MaterialTheme.typography.labelMedium,
                     color = ZcodeColors.primary,
                 )

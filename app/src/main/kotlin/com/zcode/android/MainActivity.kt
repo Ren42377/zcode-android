@@ -17,6 +17,8 @@ import com.zcode.android.core.designsystem.ZcodeColors
 import com.zcode.android.core.designsystem.ZcodeTheme
 import com.zcode.android.feature.chat.ChatScreen
 import com.zcode.android.feature.chat.OnboardingScreen
+import com.zcode.android.feature.settings.SessionsScreen
+import com.zcode.android.feature.settings.SettingsScreen
 import com.zcode.android.feature.terminal.TerminalScreen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -55,10 +57,27 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("chat/{sessionId}") {
-                            ChatScreen(onOpenTerminal = { navController.navigate("terminal") })
+                            ChatScreen(
+                                onOpenTerminal = { navController.navigate("terminal") },
+                                onOpenSettings = { navController.navigate("settings") },
+                                onOpenSessions = { navController.navigate("sessions") },
+                            )
                         }
                         composable("terminal") {
                             TerminalScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("settings") {
+                            SettingsScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("sessions") {
+                            SessionsScreen(
+                                onBack = { navController.popBackStack() },
+                                onOpenSession = { id ->
+                                    navController.navigate("chat/$id") {
+                                        popUpTo("chat/{sessionId}") { inclusive = true }
+                                    }
+                                },
+                            )
                         }
                     }
                 }
