@@ -8,15 +8,15 @@ import com.zcode.android.core.storage.SessionDao
 import com.zcode.android.core.storage.ToolEventDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import javax.inject.Inject
 
 data class FileNode(
     val path: String,
@@ -138,7 +138,12 @@ class WorkspaceViewModel
         // A file counts as changed when the agent read, wrote, or edited it during
         // the most recent session, which mirrors the ZCode change markers.
         private suspend fun changedFilePaths(): Set<String> {
-            val sessionId = sessionDao.observeAll().first().firstOrNull()?.id ?: return emptySet()
+            val sessionId =
+                sessionDao
+                    .observeAll()
+                    .first()
+                    .firstOrNull()
+                    ?.id ?: return emptySet()
             val fromTools =
                 toolEventDao
                     .observe(sessionId)

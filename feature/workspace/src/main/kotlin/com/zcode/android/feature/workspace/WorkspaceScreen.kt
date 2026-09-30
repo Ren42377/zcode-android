@@ -131,8 +131,7 @@ fun WorkspaceScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     if (node.isDirectory) viewModel.enter(node.path) else viewModel.open(node.path)
-                                }
-                                .padding(vertical = 8.dp),
+                                }.padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
