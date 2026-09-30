@@ -1,14 +1,14 @@
 package com.zcode.android.feature.settings
 
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class UpdateResult(
     val tag: String?,

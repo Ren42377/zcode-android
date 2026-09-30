@@ -16,13 +16,13 @@ import com.zcode.android.core.storage.UserPreferences
 import com.zcode.android.core.terminal.TermuxBridge
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class UpdateStatus(
     val checking: Boolean = false,
@@ -141,7 +141,10 @@ class SettingsViewModel
         fun forkSession(id: String) {
             viewModelScope.launch {
                 val source = sessionDao.get(id) ?: return@launch
-                val newId = java.util.UUID.randomUUID().toString()
+                val newId =
+                    java.util.UUID
+                        .randomUUID()
+                        .toString()
                 val now = System.currentTimeMillis()
                 sessionDao.upsert(
                     SessionEntity(
@@ -155,7 +158,15 @@ class SettingsViewModel
                     ),
                 )
                 messageDao.list(id).forEach { message ->
-                    messageDao.insert(message.copy(id = java.util.UUID.randomUUID().toString(), sessionId = newId))
+                    messageDao.insert(
+                        message.copy(
+                            id =
+                                java.util.UUID
+                                    .randomUUID()
+                                    .toString(),
+                            sessionId = newId,
+                        ),
+                    )
                 }
             }
         }
