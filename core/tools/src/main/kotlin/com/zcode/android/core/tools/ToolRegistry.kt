@@ -58,6 +58,5 @@ class ToolRegistry
                 )
             } + externalProviders.flatMap { provider -> provider.specs() }
 
-        fun byName(name: String): Tool? =
-            byName[name] ?: externalProviders.firstNotNullOfOrNull { provider -> provider.byName(name) }
+        fun byName(name: String): Tool? = byName[name] ?: externalProviders.firstNotNullOfOrNull { provider -> provider.byName(name) }
     }
