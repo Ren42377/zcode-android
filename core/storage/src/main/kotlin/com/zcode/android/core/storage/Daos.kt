@@ -46,6 +46,11 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE sessionId = :sessionId")
     suspend fun clear(sessionId: String)
+
+    @Query(
+        "SELECT IFNULL(SUM(inputTokens), 0) AS inputTokens, IFNULL(SUM(outputTokens), 0) AS outputTokens FROM messages WHERE sessionId = :sessionId",
+    )
+    fun observeUsage(sessionId: String): Flow<SessionUsage>
 }
 
 data class SessionUsage(
@@ -61,8 +66,4 @@ interface ToolEventDao {
     @Insert
     suspend fun insert(event: ToolEventEntity)
 
-    @Query(
-        "SELECT IFNULL(SUM(inputTokens), 0) AS inputTokens, IFNULL(SUM(outputTokens), 0) AS outputTokens FROM messages WHERE sessionId = :sessionId",
-    )
-    fun observeUsage(sessionId: String): Flow<SessionUsage>
 }
