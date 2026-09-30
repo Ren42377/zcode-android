@@ -97,7 +97,10 @@ class SettingsViewModel
         ) {
             viewModelScope.launch {
                 try {
-                    val manifest = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { pluginLoader.installFromGitHub(repo, ref) }
+                    val manifest =
+                        kotlinx.coroutines.withContext(
+                            kotlinx.coroutines.Dispatchers.IO,
+                        ) { pluginLoader.installFromGitHub(repo, ref) }
                     _update.value = UpdateStatus(message = "Installed ${manifest.name} ${manifest.version}")
                     refreshPlugins()
                 } catch (e: java.io.IOException) {
