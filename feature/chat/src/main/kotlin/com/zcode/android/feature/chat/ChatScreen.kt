@@ -60,6 +60,7 @@ fun ChatScreen(
     onOpenTerminal: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSessions: () -> Unit,
+    onOpenFiles: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
@@ -124,6 +125,13 @@ fun ChatScreen(
             TextButton(onClick = onOpenTerminal) {
                 Text(
                     text = ">_",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ZcodeColors.primary,
+                )
+            }
+            TextButton(onClick = onOpenFiles) {
+                Text(
+                    text = "Files",
                     style = MaterialTheme.typography.labelMedium,
                     color = ZcodeColors.primary,
                 )

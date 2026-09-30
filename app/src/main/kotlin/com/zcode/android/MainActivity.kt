@@ -20,6 +20,7 @@ import com.zcode.android.feature.chat.OnboardingScreen
 import com.zcode.android.feature.settings.SessionsScreen
 import com.zcode.android.feature.settings.SettingsScreen
 import com.zcode.android.feature.terminal.TerminalScreen
+import com.zcode.android.feature.workspace.WorkspaceScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
                                 onOpenTerminal = { navController.navigate("terminal") },
                                 onOpenSettings = { navController.navigate("settings") },
                                 onOpenSessions = { navController.navigate("sessions") },
+                                onOpenFiles = { navController.navigate("files") },
                             )
                         }
                         composable("terminal") {
@@ -68,6 +70,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("settings") {
                             SettingsScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("files") {
+                            WorkspaceScreen(onBack = { navController.popBackStack() })
                         }
                         composable("sessions") {
                             SessionsScreen(
